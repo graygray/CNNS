@@ -62,7 +62,7 @@ public class MainActivity extends Activity implements OnCompletionListener {
 		   { 
 		    	
 		        try {
-		        	webContent = getBlogStats();
+//		        	webContent = getBlogStats();
 					Log.e("gray", webContent);   
 					
 					
@@ -131,29 +131,29 @@ public String getBlogStats() throws Exception {
 	    Log.e("gray", "MainActivity.java:getBlogStats, " + "");
 	    
 	    // config cleaner properties
-	    HtmlCleaner htmlCleaner = new HtmlCleaner();
-	    CleanerProperties props = htmlCleaner.getProperties();
-	    props.setAllowHtmlInsideAttributes(false);
-	    props.setAllowMultiWordAttributes(true);
-	    props.setRecognizeUnicodeChars(true);
-	    props.setOmitComments(true);
-	
-	    // create URL object
-	    URL url = new URL(BLOG_URL);
-	    // get HTML page root node
-	    TagNode root = htmlCleaner.clean(url);
-	
-	    // query XPath
-	    Object[] statsNode = root.evaluateXPath(XPATH_STATS);
-	    // process data if found any node
-	    if(statsNode.length > 0) {
-	    	
-	    	Log.e("gray", "MainActivity.java:getBlogStats, " + "statsNode.length > 0");
-	        // I already know there's only one node, so pick index at 0.
-	        TagNode resultNode = (TagNode)statsNode[0];
-	        // get text data from HTML node
-	        stats = resultNode.getText().toString();
-	    }
+//	    HtmlCleaner htmlCleaner = new HtmlCleaner();
+//	    CleanerProperties props = htmlCleaner.getProperties();
+//	    props.setAllowHtmlInsideAttributes(false);
+//	    props.setAllowMultiWordAttributes(true);
+//	    props.setRecognizeUnicodeChars(true);
+//	    props.setOmitComments(true);
+//	
+//	    // create URL object
+//	    URL url = new URL(BLOG_URL);
+//	    // get HTML page root node
+//	    TagNode root = htmlCleaner.clean(url);
+//	
+//	    // query XPath
+//	    Object[] statsNode = root.evaluateXPath(XPATH_STATS);
+//	    // process data if found any node
+//	    if(statsNode.length > 0) {
+//	    	
+//	    	Log.e("gray", "MainActivity.java:getBlogStats, " + "statsNode.length > 0");
+//	        // I already know there's only one node, so pick index at 0.
+//	        TagNode resultNode = (TagNode)statsNode[0];
+//	        // get text data from HTML node
+//	        stats = resultNode.getText().toString();
+//	    }
 	
 	    // return value
 	    return stats;
