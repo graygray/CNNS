@@ -105,28 +105,28 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		
 		while( !isgetCNNSTitleOK ){
 			try {
-				Thread.sleep(100);
+				Thread.sleep(50);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 		setResultText(webContent);
 		
-		final Button button_keyevent = (Button) findViewById(R.id.button_test);
-		button_keyevent.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
- 
-            	Log.e("gray", "MainActivity.java:onClick, " + "");
-            	setResultText(webContent);
-            	
-            }
-        });
+//		final Button button_keyevent = (Button) findViewById(R.id.button_test);
+//		button_keyevent.setOnClickListener(new View.OnClickListener() {
+//            public void onClick(View v) {
+// 
+//            	Log.e("gray", "MainActivity.java:onClick, " + "");
+//            	setResultText(webContent);
+//            	
+//            }
+//        });
 		
 		Log.e("gray", "end~~ " ); 
 	}
 
 	public void getScriptContent() throws Exception {
-	
+		
 	    Log.e("gray", "MainActivity.java:getScriptContent");
 	    
 	    // config cleaner properties
@@ -206,13 +206,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	}
 	
 	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
-	}
-
-	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		System.exit(0);
@@ -220,20 +213,33 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-		System.out.println("¼½©ñ§¹¦¨");
+		System.out.println("play finished!");
 	}
 	
 	public boolean onKeyUp(int keyCode, KeyEvent event) {  
-	    if(keyCode==4)
-	        Log.e("gray", "PlayActivity.java: " + "Back key code is 4");
-	    
-//	    finish();
-	    Intent intent = new Intent();
-		intent.setClass(PlayActivity.this, MainActivity.class);
-		startActivity(intent);
+	    if(keyCode==4){
+	    	
+	    	if (mVideoView.isPlaying()) {
+	    		mVideoView.stopPlayback();
+            }
+	    	
+	    	Log.e("gray", "PlayActivity.java: " + "Back key code is 4");
+//	    	finish();
+	    	PlayActivity.this.finish();
+	    	Intent intent = new Intent();
+	    	intent.setClass(PlayActivity.this, MainActivity.class);
+	    	startActivity(intent);
+	    }
 		
-	    return true; 
+	    return super.onKeyDown(keyCode, event);  
+//	    return true; 
 	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.play, menu);
+		return true;
+	}
+
 }
-
-

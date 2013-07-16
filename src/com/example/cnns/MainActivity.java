@@ -1,5 +1,5 @@
 package com.example.cnns;
-  
+
 import java.net.URL;
 import java.util.ArrayList;  
 import java.util.Arrays;  
@@ -7,22 +7,29 @@ import java.util.Arrays;
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
+
+import com.google.ads.AdRequest;
+import com.google.ads.AdSize;
+import com.google.ads.AdView;
   
 import android.R.string;
 import android.app.Activity;  
 import android.content.Intent;
 import android.os.Bundle;  
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.Menu;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;  
+import android.widget.LinearLayout;
 import android.widget.ListView;  
 import android.widget.Toast;
-  
-public class MainActivity extends Activity {  
-    
+
+public class MainActivity extends Activity {
+
 	public static final int MAX_LIST_ARRAY_SIZE = 10;
 	
 	ListView listView;
@@ -45,90 +52,95 @@ public class MainActivity extends Activity {
     // XPath query
 	public static String XPATH_resultS = "";
 	public static String resultString = "";
-    
-  /** Called when the activity is first created. */  
-  @Override  
-  public void onCreate(Bundle savedInstanceState) {  
-    super.onCreate(savedInstanceState);  
-    setContentView(R.layout.activity_main);  
 	
-	new Thread(new Runnable() 
-	{ 
-	    @Override
-	    public void run() 
-	   { 
-	        try {
-	        	getCNNSTitle();
-			} catch (Exception e) {
-				
-				Log.e("gray", "Exception e = " + e.toString());    
+	// AD here
+	private AdView adView;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		
+		adView = new AdView(this, AdSize.BANNER, "a151e4fa6d7cf0e");
+		LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
+		layout.addView(adView);
+		adView.loadAd(new AdRequest());
+		
+		new Thread(new Runnable() 
+		{ 
+		    @Override
+		    public void run() 
+		   { 
+		        try {
+		        	getCNNSTitle();
+				} catch (Exception e) {
+					
+					Log.e("gray", "Exception e = " + e.toString());    
+					e.printStackTrace();
+				}
+		   } 
+		}).start();
+	    
+		
+		while( !isgetCNNSTitleOK ){
+			
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-	   } 
-	}).start();
-    
-	
-	while( !isgetCNNSTitleOK ){
-		
-		try {
-			Thread.sleep(100);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+			
 		}
 		
-	}
-	
-	// Get ListView object from res
-    listView = (ListView) findViewById(R.id.mainListView);
-    
-    // Define a new Adapter
-    // First parameter - Context
-    // Second parameter - Layout for the row
-    // Third parameter - ID of the TextView to which the data is written
-    // Forth - the Array of data
-    adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, videoListStringArray);
+		// Get ListView object from res
+	    listView = (ListView) findViewById(R.id.mainListView);
+	    
+	    // Define a new Adapter
+	    // First parameter - Context
+	    // Second parameter - Layout for the row
+	    // Third parameter - ID of the TextView to which the data is written
+	    // Forth - the Array of data
+	    adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, videoListStringArray);
 
-    // Assign adapter to ListView
-    listView.setAdapter(adapter); 
-    
-    // ListView Item Click Listener
-    listView.setOnItemClickListener(new OnItemClickListener() {
+	    // Assign adapter to ListView
+	    listView.setAdapter(adapter); 
+	    
+	    // ListView Item Click Listener
+	    listView.setOnItemClickListener(new OnItemClickListener() {
 
-		@Override
-		public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
+				
+				Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
+				
+				String [] tempSA = new String [20];
+				tempSA = scriptAddressStringArray[position].split("/");
+				
+				for (int i = 0; i < tempSA.length; i++) {
+					Log.e("gray", "MainActivity.java: " + tempSA[i]);
+				}
+				
+				int year, month;
+				String day;
+				
+				year = Integer.valueOf(tempSA[1]) - 2000;
+//				month = Integer.valueOf(tempSA[2]);
+				day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
+				
+				scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
+				Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString : " + scriptAddressString);
 			
-			Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
+				videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
+				Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString : " + videoAddressString);
 			
-			String [] tempSA = new String [20];
-			tempSA = scriptAddressStringArray[position].split("/");
-			
-			for (int i = 0; i < tempSA.length; i++) {
-				Log.e("gray", "MainActivity.java: " + tempSA[i]);
+				Intent intent = new Intent();
+				intent.setClass(MainActivity.this, PlayActivity.class);
+				startActivity(intent);
 			}
+	    }); 
 			
-			int year, month;
-			String day;
-			
-			year = Integer.valueOf(tempSA[1]) - 2000;
-//			month = Integer.valueOf(tempSA[2]);
-			day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
-			
-			scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
-			Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString : " + scriptAddressString);
-		
-			videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
-			Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString : " + videoAddressString);
-		
-			Intent intent = new Intent();
-			intent.setClass(MainActivity.this, PlayActivity.class);
-			startActivity(intent);
-		}
+	}
 
-     }); 
-    
-    
-  	}
-  
 	public void getCNNSTitle() throws Exception {
 	    String resultS = "";
 	
@@ -236,6 +248,30 @@ public class MainActivity extends Activity {
 	public static String getVideoAddress() {
 		return videoAddressString;
 	}
-  
-  
-}  
+	
+//	public boolean onKeyUp(int keyCode, KeyEvent event) {  
+//	    if(keyCode==4){
+//	    	
+//	    	Log.e("gray", "PlayActivity.java: " + "Back key code is 4");
+////	    	finish();
+//
+//	    }
+//		
+//	    return super.onKeyDown(keyCode, event);  
+////	    return true; 
+//	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.main, menu);
+		return true;
+	}
+	
+	@Override
+	public void onDestroy() {
+		adView.destroy();
+		super.onDestroy();
+	}
+
+}
