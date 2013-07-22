@@ -37,6 +37,17 @@
                 android:id="@+id/tv_webContent"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content" />
+
+            <EditText
+                android:id="@+id/editText_webContent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ems="10"
+                android:focusable="false"
+                android:inputType="textMultiLine" >
+
+                <requestFocus />
+            </EditText>
             
         </LinearLayout>
     </ScrollView>

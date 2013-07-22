@@ -11,19 +11,25 @@
     <RelativeLayout
         android:id="@+id/relativeLayout1"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" >
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true" >
 
         <ListView
             android:id="@+id/mainListView"
             android:layout_width="fill_parent"
-            android:layout_height="397dp" >
+            android:layout_height="397dp"
+            android:layout_alignParentTop="true" >
+
         </ListView>
     </RelativeLayout>
 
     <LinearLayout
         android:id="@+id/ADLayout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
