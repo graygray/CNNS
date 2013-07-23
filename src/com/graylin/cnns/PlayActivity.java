@@ -12,6 +12,7 @@ import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -39,13 +40,13 @@ public class PlayActivity extends Activity implements OnCompletionListener {
     
     public static String webContent = "";
     
-	TextView tvWebContent;
+    public static TextView tvWebContent;
 //	public static String vedioPath = Environment.getExternalStorageDirectory().getPath() + "/asdf.mp4";
 //	public static String vedioPath = "http://podcasts.cnn.net/cnn/big/podcasts/studentnews/video/2013/06/06/sn-060713.cnn.m4v";
 	public static String vedioPath = "";
 	public static VideoView mVideoView;
 	
-	boolean isgetCNNSTitleOK = false;
+	public boolean isgetCNNSTitleOK = false;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {

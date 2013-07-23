@@ -14,8 +14,11 @@ import com.google.ads.AdView;
   
 import android.R.string;
 import android.app.Activity;  
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;  
 import android.util.Log;
 import android.view.KeyEvent;
@@ -33,9 +36,9 @@ public class MainActivity extends Activity {
 
 	public static final int MAX_LIST_ARRAY_SIZE = 10;
 	
-	ListView listView;
-	String[] videoListStringArray = new String [MAX_LIST_ARRAY_SIZE];
-	String[] scriptAddressStringArray = new String [MAX_LIST_ARRAY_SIZE];
+	public static ListView listView;
+	public static String[] videoListStringArray = new String [MAX_LIST_ARRAY_SIZE];
+	public static String[] scriptAddressStringArray = new String [MAX_LIST_ARRAY_SIZE];
 	
 	public static final String scriptAddressStringPrefix = "http://transcripts.cnn.com/TRANSCRIPTS/";
 	public static final String scriptAddressStringPostfix = "/sn.01.html";
@@ -45,8 +48,8 @@ public class MainActivity extends Activity {
 	public static final String videoAddressStringPostfix = ".cnn.m4v";
 	public static String videoAddressString = "";
 	
-	ArrayAdapter<String> adapter;
-	boolean isgetCNNSTitleOK = false;
+	public static ArrayAdapter<String> adapter;
+	public boolean isgetCNNSTitleOK = false;
 	
 	// HTML page
 	public static final String CNNS_URL = "http://edition.cnn.com/US/studentnews/quick.guide/archive/";
@@ -62,93 +65,114 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		Toast.makeText(getApplicationContext(),"... please wait!!", Toast.LENGTH_SHORT).show();
 		
-		adView = new AdView(this, AdSize.BANNER, "a151e4fa6d7cf0e");
-		LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
-		layout.addView(adView);
-		adView.loadAd(new AdRequest());
-		
-		if (! isdone) {
+		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+		NetworkInfo networInfo = conManager.getActiveNetworkInfo();  
+		if (networInfo == null || !networInfo.isAvailable()){
 			
-			new Thread(new Runnable() 
-			{ 
-			    @Override
-			    public void run() 
-			   { 
-			        try {
-			        	getCNNSTitle();
-					} catch (Exception e) {
-						
-						Log.e("gray", "Exception e = " + e.toString());    
+			Log.e("gray", "CONNECTIVITY_SERVICE is null");
+			AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+	        dialog.setTitle("Alert Dialog");
+	        dialog.setMessage("NO Network!!");
+	        dialog.show();
+	        
+		}else{
+			
+			Log.e("gray", "CONNECTIVITY_SERVICE is ok");
+//			Toast.makeText(getApplicationContext(),"... please wait!!", Toast.LENGTH_SHORT).show();
+//			AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+//	        dialog.setTitle("Alert Dialog");
+//	        dialog.setMessage("... please wait!!");
+//	        dialog.show();
+			
+			adView = new AdView(this, AdSize.BANNER, "a151e4fa6d7cf0e");
+			LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
+			layout.addView(adView);
+			adView.loadAd(new AdRequest());
+			
+			if (! isdone) {
+				
+				new Thread(new Runnable() 
+				{ 
+				    @Override
+				    public void run() 
+				   { 
+				        try {
+				        	getCNNSTitle();
+						} catch (Exception e) {
+							
+							Log.e("gray", "Exception e = " + e.toString());    
+							e.printStackTrace();
+						}
+				   } 
+				}).start();
+			    
+				
+				while( !isgetCNNSTitleOK ){
+					try {
+						Thread.sleep(50);
+					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-			   } 
-			}).start();
+				}
+				
+				isdone = true;
+			}
+			
+			// Get ListView object from res
+		    listView = (ListView) findViewById(R.id.mainListView);
 		    
-			
-			while( !isgetCNNSTitleOK ){
-				try {
-					Thread.sleep(50);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+		    // Define a new Adapter
+		    // First parameter - Context
+		    // Second parameter - Layout for the row
+		    // Third parameter - ID of the TextView to which the data is written
+		    // Forth - the Array of data
+		    adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, videoListStringArray);
+
+		    // Assign adapter to ListView
+		    listView.setAdapter(adapter); 
+		    
+		    // ListView Item Click Listener
+		    listView.setOnItemClickListener(new OnItemClickListener() {
+
+				@Override
+				public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
+					
+					Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
+					
+					String [] tempSA = new String [20];
+					tempSA = scriptAddressStringArray[position].split("/");
+					
+					for (int i = 0; i < tempSA.length; i++) {
+						Log.e("gray", "MainActivity.java: " + tempSA[i]);
+					}
+					
+					int year, month;
+					String day;
+					
+					year = Integer.valueOf(tempSA[1]) - 2000;
+//					month = Integer.valueOf(tempSA[2]);
+					day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
+					
+					scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
+					Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString : " + scriptAddressString);
+				
+					videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
+					Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString : " + videoAddressString);
+				
+					Intent intent = new Intent();
+					intent.setClass(MainActivity.this, PlayActivity.class);
+					startActivity(intent);
 				}
-			}
+		    }); 
 			
-			isdone = true;
 		}
-		
-		// Get ListView object from res
-	    listView = (ListView) findViewById(R.id.mainListView);
-	    
-	    // Define a new Adapter
-	    // First parameter - Context
-	    // Second parameter - Layout for the row
-	    // Third parameter - ID of the TextView to which the data is written
-	    // Forth - the Array of data
-	    adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, videoListStringArray);
-
-	    // Assign adapter to ListView
-	    listView.setAdapter(adapter); 
-	    
-	    // ListView Item Click Listener
-	    listView.setOnItemClickListener(new OnItemClickListener() {
-
-			@Override
-			public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
-				
-				Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
-				
-				String [] tempSA = new String [20];
-				tempSA = scriptAddressStringArray[position].split("/");
-				
-				for (int i = 0; i < tempSA.length; i++) {
-					Log.e("gray", "MainActivity.java: " + tempSA[i]);
-				}
-				
-				int year, month;
-				String day;
-				
-				year = Integer.valueOf(tempSA[1]) - 2000;
-//				month = Integer.valueOf(tempSA[2]);
-				day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
-				
-				scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
-				Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString : " + scriptAddressString);
-			
-				videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
-				Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString : " + videoAddressString);
-			
-				Intent intent = new Intent();
-				intent.setClass(MainActivity.this, PlayActivity.class);
-				startActivity(intent);
-			}
-	    }); 
 			
 	}
 
 	public void getCNNSTitle() throws Exception {
 	    String resultS = "";
+	    String matchString = "CNN Student News Transcript -";
 	
 //	    Log.e("gray", "MainActivity.java:getCNNSTitle, " + "");
 	    
@@ -170,53 +194,59 @@ public class MainActivity extends Activity {
 	    Object[] resultSNode = root.evaluateXPath(XPATH_resultS);
 	    // process data if found any node
 	    
-	    int dummy = 0;
-	    if(resultSNode.length > 0) {
-	    	
-//	    	Log.e("gray", "MainActivity.java:getCNNSTitle, " + "resultSNode.length > 0, resultSNode.length:" + resultSNode.length);
-	    	for (int i = 0; i < resultSNode.length; i++) {
-				
-	    		TagNode resultNode = (TagNode)resultSNode[i];
-	    		resultS = resultNode.getText().toString();
-	    		
-	    		resultS = resultS.replace("CNN Student News Transcript -", ">>>>");
-	    		videoListStringArray[i + dummy] = resultS;
-//	    		Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", string = " + resultS);
-
-	    		scriptAddressStringArray[i + dummy] = resultNode.getAttributeByName("href");
-	    		Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
-			}
-	        
-	    } else {
-	    	Log.e("gray", "resultSNode.length <= 0, err!!");
-		}
-	    dummy += resultSNode.length;
-	    
-	    // query XPath
-	    XPATH_resultS = "//div[@class='cnn_mtt1imghtitle']//span//a";
-	    resultSNode = root.evaluateXPath(XPATH_resultS);
-	    // process data if found any node
-	    
-	    if(resultSNode.length > 0) {
-	    	
-//	    	Log.e("gray", "MainActivity.java:getCNNSTitle, " + "resultSNode.length > 0, resultSNode.length:" + resultSNode.length);
-	    	for (int i = 0; i < resultSNode.length; i++) {
-				
-	    		TagNode resultNode = (TagNode)resultSNode[i];
-	    		resultS = resultNode.getText().toString();
-	    		
-	    		resultS = resultS.replace("CNN Student News Transcript -", ">>>>");
-	    		videoListStringArray[i + dummy] = resultS;
-//	    		Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", string = " + resultS);
-
-	    		scriptAddressStringArray[i + dummy] = resultNode.getAttributeByName("href");
-	    		Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
-	    	}
-	        
-	    } else {
-	    	Log.e("gray", "resultSNode.length <= 0, err!!");
-		}
-	    dummy += resultSNode.length;
+//	    int dummy = 0;
+//	    if(resultSNode.length > 0) {
+//	    	
+////	    	Log.e("gray", "MainActivity.java:getCNNSTitle, " + "resultSNode.length > 0, resultSNode.length:" + resultSNode.length);
+//	    	for (int i = 0; i < resultSNode.length; i++) {
+//				
+//	    		TagNode resultNode = (TagNode)resultSNode[i];
+//	    		resultS = resultNode.getText().toString();
+//	    		
+//	    		resultS = resultS.replace("CNN Student News Transcript -", ">>>>");
+//	    		videoListStringArray[i + dummy] = resultS;
+////	    		Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", string = " + resultS);
+//
+//	    		scriptAddressStringArray[i + dummy] = resultNode.getAttributeByName("href");
+//	    		Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+//			}
+//	        
+//	    } else {
+//	    	Log.e("gray", "resultSNode.length <= 0, err!!");
+//		}
+//	    dummy += resultSNode.length;
+//	    
+//	    // query XPath
+//	    XPATH_resultS = "//div[@class='cnn_mtt1imghtitle']//span//a";
+//	    resultSNode = root.evaluateXPath(XPATH_resultS);
+//	    // process data if found any node
+//	    
+//	    if(resultSNode.length > 0) {
+//	    	
+////	    	Log.e("gray", "MainActivity.java:getCNNSTitle, " + "resultSNode.length > 0, resultSNode.length:" + resultSNode.length);
+//	    	for (int i = 0; i < resultSNode.length; i++) {
+//				
+//	    		TagNode resultNode = (TagNode)resultSNode[i];
+//	    		resultS = resultNode.getText().toString();
+//	    		
+//	    		if (resultS.regionMatches(0, matchString, 0, 30)) {
+//	    			
+//	    			resultS = resultS.replace("CNN Student News Transcript -", ">>>>");
+//	    			videoListStringArray[i + dummy] = resultS;
+////	    			Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", string = " + resultS);
+//	    			
+//	    			scriptAddressStringArray[i + dummy] = resultNode.getAttributeByName("href");
+//	    			Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+//	    		} else {
+//	    			Log.e("gray", "MainActivity.java: string not match!!" );
+//				}
+//	    		
+//	    	}
+//	        
+//	    } else {
+//	    	Log.e("gray", "resultSNode.length <= 0, err!!");
+//		}
+//	    dummy += resultSNode.length;
 	    
 	    XPATH_resultS = "//div[@class='archive-item story cnn_skn_spccovstrylst']//h2//a";
 	    resultSNode = root.evaluateXPath(XPATH_resultS);
@@ -224,17 +254,25 @@ public class MainActivity extends Activity {
 	    if(resultSNode.length > 0) {
 	    	
 //	    	Log.e("gray", "MainActivity.java:getCNNSTitle, " + "resultSNode.length > 0, resultSNode.length:" + resultSNode.length);
-	    	for (int i = 0; i < MAX_LIST_ARRAY_SIZE - dummy; i++) {
+	    	int arrayIndex = 0;
+	    	for (int i = 0; arrayIndex < MAX_LIST_ARRAY_SIZE; i++) {
 				
 	    		TagNode resultNode = (TagNode)resultSNode[i];
 	    		resultS = resultNode.getText().toString();
 	    		
-	    		resultS = resultS.replace("CNN Student News Transcript -", ">>>>");
-	    		videoListStringArray[i + dummy] = resultS;
-//	    		Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", string = " + resultS);
-
-	    		scriptAddressStringArray[i + dummy] = resultNode.getAttributeByName("href");
-	    		Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+	    		if (resultS.regionMatches(0, matchString, 0, 20)) {
+					
+	    			resultS = resultS.replace("CNN Student News Transcript -", ">>>>");
+	    			videoListStringArray[arrayIndex] = resultS;
+//	    			Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", string = " + resultS);
+	    			
+	    			scriptAddressStringArray[arrayIndex] = resultNode.getAttributeByName("href");
+	    			Log.e("gray", "MainActivity.java:getCNNSTitle, i:" + (i) + ", arrayIndex:" + arrayIndex + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+	    			
+	    			arrayIndex++;
+				} else {
+					Log.e("gray", "MainActivity.java: string not match!!" );
+				}
 	    	}
 	        
 	    } else {
