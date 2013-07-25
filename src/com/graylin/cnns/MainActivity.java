@@ -1,8 +1,6 @@
 package com.graylin.cnns;
 
 import java.net.URL;
-import java.util.ArrayList;  
-import java.util.Arrays;  
 
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
@@ -12,44 +10,42 @@ import com.google.ads.AdRequest;
 import com.google.ads.AdSize;
 import com.google.ads.AdView;
   
-import android.R.string;
 import android.app.Activity;  
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;  
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;  
 import android.widget.LinearLayout;
 import android.widget.ListView;  
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
-
-	public static final int MAX_LIST_ARRAY_SIZE = 10;
 	
-	public static ListView listView;
+	public static boolean isDebug = false;
+
+	public static final int MAX_LIST_ARRAY_SIZE = 20;
+	
+	public ListView listView;
 	public static String[] videoListStringArray = new String [MAX_LIST_ARRAY_SIZE];
 	public static String[] scriptAddressStringArray = new String [MAX_LIST_ARRAY_SIZE];
 	
-	public static final String scriptAddressStringPrefix = "http://transcripts.cnn.com/TRANSCRIPTS/";
-	public static final String scriptAddressStringPostfix = "/sn.01.html";
+	public final String scriptAddressStringPrefix = "http://transcripts.cnn.com/TRANSCRIPTS/";
+	public final String scriptAddressStringPostfix = "/sn.01.html";
 	public static String scriptAddressString = "";
 	
-	public static final String videoAddressStringPrefix = "http://podcasts.cnn.net/cnn/big/podcasts/studentnews/video/";
-	public static final String videoAddressStringPostfix = ".cnn.m4v";
+	public final String videoAddressStringPrefix = "http://podcasts.cnn.net/cnn/big/podcasts/studentnews/video/";
+	public final String videoAddressStringPostfix = ".cnn.m4v";
 	public static String videoAddressString = "";
 	
-	public static ArrayAdapter<String> adapter;
-	public boolean isgetCNNSTitleOK = false;
+	public ArrayAdapter<String> adapter;
+	public boolean isGetCNNSTitleOK = false;
 	
 	// HTML page
 	public static final String CNNS_URL = "http://edition.cnn.com/US/studentnews/quick.guide/archive/";
@@ -66,11 +62,13 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
+		Log.e("gray", "MainActivity.java: START ===============");
+		
 		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
 		NetworkInfo networInfo = conManager.getActiveNetworkInfo();  
 		if (networInfo == null || !networInfo.isAvailable()){
 			
-			Log.e("gray", "CONNECTIVITY_SERVICE is null");
+			Log.e("gray", "MainActivity.java, NO CONNECTIVITY_SERVICE");
 			AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
 	        dialog.setTitle("Alert Dialog");
 	        dialog.setMessage("NO Network!!");
@@ -78,7 +76,7 @@ public class MainActivity extends Activity {
 	        
 		}else{
 			
-			Log.e("gray", "CONNECTIVITY_SERVICE is ok");
+			Log.e("gray", "MainActivity.java, CONNECTIVITY_SERVICE is OK!");
 //			Toast.makeText(getApplicationContext(),"... please wait!!", Toast.LENGTH_SHORT).show();
 //			AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
 //	        dialog.setTitle("Alert Dialog");
@@ -100,22 +98,19 @@ public class MainActivity extends Activity {
 				        try {
 				        	getCNNSTitle();
 						} catch (Exception e) {
-							
 							Log.e("gray", "Exception e = " + e.toString());    
 							e.printStackTrace();
 						}
 				   } 
 				}).start();
 			    
-				
-				while( !isgetCNNSTitleOK ){
+				while( !isGetCNNSTitleOK ){
 					try {
 						Thread.sleep(50);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
-				
 				isdone = true;
 			}
 			
@@ -139,12 +134,13 @@ public class MainActivity extends Activity {
 				public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
 					
 					Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
-					
 					String [] tempSA = new String [20];
 					tempSA = scriptAddressStringArray[position].split("/");
 					
-					for (int i = 0; i < tempSA.length; i++) {
-						Log.e("gray", "MainActivity.java: " + tempSA[i]);
+					if (isDebug) {
+						for (int i = 0; i < tempSA.length; i++) {
+							Log.e("gray", "MainActivity.java: " + tempSA[i]);
+						}
 					}
 					
 					int year, month;
@@ -155,10 +151,12 @@ public class MainActivity extends Activity {
 					day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
 					
 					scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
-					Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString : " + scriptAddressString);
-				
 					videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
-					Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString : " + videoAddressString);
+
+					if (isDebug) {
+						Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString:" + scriptAddressString);
+						Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString:" + videoAddressString);
+					}
 				
 					Intent intent = new Intent();
 					intent.setClass(MainActivity.this, PlayActivity.class);
@@ -168,13 +166,16 @@ public class MainActivity extends Activity {
 			
 		}
 			
+		Log.e("gray", "MainActivity.java: END =================");
 	}
 
 	public void getCNNSTitle() throws Exception {
 	    String resultS = "";
 	    String matchString = "CNN Student News Transcript -";
 	
-//	    Log.e("gray", "MainActivity.java:getCNNSTitle, " + "");
+	    if (isDebug) {
+	    	Log.e("gray", "MainActivity.java:getCNNSTitle, " + "");
+		}
 	    
 	    // config cleaner properties
 	    HtmlCleaner htmlCleaner = new HtmlCleaner();
@@ -253,21 +254,25 @@ public class MainActivity extends Activity {
 	    // process data if found any node
 	    if(resultSNode.length > 0) {
 	    	
-//	    	Log.e("gray", "MainActivity.java:getCNNSTitle, " + "resultSNode.length > 0, resultSNode.length:" + resultSNode.length);
+	    	if (isDebug) {
+	    		Log.e("gray", "MainActivity.java:getCNNSTitle, " + "resultSNode.length > 0, resultSNode.length:" + resultSNode.length);
+			}
 	    	int arrayIndex = 0;
 	    	for (int i = 0; arrayIndex < MAX_LIST_ARRAY_SIZE; i++) {
 				
 	    		TagNode resultNode = (TagNode)resultSNode[i];
 	    		resultS = resultNode.getText().toString();
 	    		
-	    		if (resultS.regionMatches(0, matchString, 0, 20)) {
+	    		if (resultS.regionMatches(0, matchString, 0, 28)) {
 					
 	    			resultS = resultS.replace("CNN Student News Transcript -", ">>>>");
 	    			videoListStringArray[arrayIndex] = resultS;
-//	    			Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", string = " + resultS);
 	    			
 	    			scriptAddressStringArray[arrayIndex] = resultNode.getAttributeByName("href");
-	    			Log.e("gray", "MainActivity.java:getCNNSTitle, i:" + (i) + ", arrayIndex:" + arrayIndex + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+	    			if (isDebug) {
+//		    			Log.e("gray", "MainActivity.java:getCNNSTitle, i = " + (i + dummy) + ", string = " + resultS);
+	    				Log.e("gray", "MainActivity.java:getCNNSTitle, i:" + (i) + ", arrayIndex:" + arrayIndex + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+					}
 	    			
 	    			arrayIndex++;
 				} else {
@@ -278,8 +283,7 @@ public class MainActivity extends Activity {
 	    } else {
 	    	Log.e("gray", "resultSNode.length <= 0, err!!");
 		}
-	    
-	    isgetCNNSTitleOK = true;
+	    isGetCNNSTitleOK = true;
 	}
 	
 	public static String getScriptAddress() {
