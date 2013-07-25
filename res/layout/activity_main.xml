@@ -18,7 +18,9 @@
             android:layout_width="wrap_content"
             android:layout_height="390dp"
             android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true" >
+            android:layout_alignParentTop="true"
+            android:paddingLeft="10dp"
+            android:paddingTop="5dp" >
 
         </ListView>
     </RelativeLayout>

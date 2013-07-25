@@ -12,10 +12,13 @@ import com.google.ads.AdView;
   
 import android.app.Activity;  
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;  
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -27,12 +30,12 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
-	
-	public static boolean isDebug = false;
+	 
+//	public static boolean isDebug = false;
+	public static boolean isDebug = true;
 
 	public static final int MAX_LIST_ARRAY_SIZE = 20;
 	
-	public ListView listView;
 	public static String[] videoListStringArray = new String [MAX_LIST_ARRAY_SIZE];
 	public static String[] scriptAddressStringArray = new String [MAX_LIST_ARRAY_SIZE];
 	
@@ -44,8 +47,8 @@ public class MainActivity extends Activity {
 	public final String videoAddressStringPostfix = ".cnn.m4v";
 	public static String videoAddressString = "";
 	
+	public ListView listView;
 	public ArrayAdapter<String> adapter;
-	public boolean isGetCNNSTitleOK = false;
 	
 	// HTML page
 	public static final String CNNS_URL = "http://edition.cnn.com/US/studentnews/quick.guide/archive/";
@@ -56,32 +59,30 @@ public class MainActivity extends Activity {
 	// AD here
 	public AdView adView;
 	
+	public ProgressDialog mProgressDialog;
+	
 	public static boolean isdone = false;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		Log.e("gray", "MainActivity.java: START ===============");
-		
+		if (isDebug) {
+			Log.e("gray", "MainActivity.java: START ===============");
+		}
+	
 		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
 		NetworkInfo networInfo = conManager.getActiveNetworkInfo();  
 		if (networInfo == null || !networInfo.isAvailable()){
 			
 			Log.e("gray", "MainActivity.java, NO CONNECTIVITY_SERVICE");
 			AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
-	        dialog.setTitle("Alert Dialog");
-	        dialog.setMessage("NO Network!!");
+	        dialog.setTitle("Alert Message");
+	        dialog.setMessage("No Availiable Network!!");
 	        dialog.show();
 	        
 		}else{
-			
-			Log.e("gray", "MainActivity.java, CONNECTIVITY_SERVICE is OK!");
-//			Toast.makeText(getApplicationContext(),"... please wait!!", Toast.LENGTH_SHORT).show();
-//			AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
-//	        dialog.setTitle("Alert Dialog");
-//	        dialog.setMessage("... please wait!!");
-//	        dialog.show();
 			
 			adView = new AdView(this, AdSize.BANNER, "a151e4fa6d7cf0e");
 			LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
@@ -90,6 +91,10 @@ public class MainActivity extends Activity {
 			
 			if (! isdone) {
 				
+				final CharSequence strDialogTitle = "Please Wait...";
+				final CharSequence strDialogBody = "Getting Data From CNN Student News...";
+				mProgressDialog = ProgressDialog.show(MainActivity.this, strDialogTitle, strDialogBody, true);
+				
 				new Thread(new Runnable() 
 				{ 
 				    @Override
@@ -97,24 +102,26 @@ public class MainActivity extends Activity {
 				   { 
 				        try {
 				        	getCNNSTitle();
+				        	handler.sendEmptyMessage(0);
 						} catch (Exception e) {
-							Log.e("gray", "Exception e = " + e.toString());    
+							Log.e("gray", "MainActivity.java:run, Exception e = " + e.toString());
 							e.printStackTrace();
 						}
 				   } 
 				}).start();
-			    
-				while( !isGetCNNSTitleOK ){
-					try {
-						Thread.sleep(50);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-				isdone = true;
 			}
-			
-			// Get ListView object from res
+		}
+		
+		if (isDebug) {
+			Log.e("gray", "MainActivity.java: END =================");
+		}
+	}
+
+	Handler handler = new Handler() {  
+        @Override  
+        public void handleMessage(Message msg) {
+        	
+        	// Get ListView object from res
 		    listView = (ListView) findViewById(R.id.mainListView);
 		    
 		    // Define a new Adapter
@@ -122,7 +129,7 @@ public class MainActivity extends Activity {
 		    // Second parameter - Layout for the row
 		    // Third parameter - ID of the TextView to which the data is written
 		    // Forth - the Array of data
-		    adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, android.R.id.text1, videoListStringArray);
+		    adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, videoListStringArray);
 
 		    // Assign adapter to ListView
 		    listView.setAdapter(adapter); 
@@ -163,12 +170,11 @@ public class MainActivity extends Activity {
 					startActivity(intent);
 				}
 		    }); 
-			
-		}
-			
-		Log.e("gray", "MainActivity.java: END =================");
-	}
-
+		    
+		    mProgressDialog.dismiss();
+        }  
+    };  
+	
 	public void getCNNSTitle() throws Exception {
 	    String resultS = "";
 	    String matchString = "CNN Student News Transcript -";
@@ -263,7 +269,7 @@ public class MainActivity extends Activity {
 	    		TagNode resultNode = (TagNode)resultSNode[i];
 	    		resultS = resultNode.getText().toString();
 	    		
-	    		if (resultS.regionMatches(0, matchString, 0, 28)) {
+	    		if (resultS.regionMatches(0, matchString, 0, matchString.length())) {
 					
 	    			resultS = resultS.replace("CNN Student News Transcript -", ">>>>");
 	    			videoListStringArray[arrayIndex] = resultS;
@@ -283,7 +289,6 @@ public class MainActivity extends Activity {
 	    } else {
 	    	Log.e("gray", "resultSNode.length <= 0, err!!");
 		}
-	    isGetCNNSTitleOK = true;
 	}
 	
 	public static String getScriptAddress() {
@@ -303,7 +308,10 @@ public class MainActivity extends Activity {
 	
 	@Override
 	public void onDestroy() {
-		adView.destroy();
+		
+		if (adView != null) {
+			adView.destroy();
+		}
 		super.onDestroy();
 	}
 

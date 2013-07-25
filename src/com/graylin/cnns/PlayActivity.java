@@ -9,7 +9,10 @@ import org.htmlcleaner.TagNode;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
@@ -23,27 +26,24 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 
 	// HTML page
 	public String CNNS_SCRIPT_URL = "";
-
     // XPath query
 	public String XPATH = "";
     
     public String cnnScriptContent = "";
 	public String vedioPath = "";
 	public VideoView mVideoView;
-	
-	public boolean isgetCNNSTitleOK = false;
+	public ProgressDialog mProgressDialog;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_play);
 		
-		Log.e("gray", "PlayActivity.java: START ===============");
-		
 		vedioPath = MainActivity.getVideoAddress();
 		CNNS_SCRIPT_URL = MainActivity.getScriptAddress();
 		
 		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java: START ===============");
 			Log.e("gray", "PlayActivity.java: vedioPath : " + vedioPath);
 			Log.e("gray", "PlayActivity.java: CNNS_SCRIPT_URL : " + CNNS_SCRIPT_URL);
 		}
@@ -60,7 +60,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			Log.e("gray", "PlayActivity.java: " + "video URL/path not exist!");
 			
 		} else {
-
 			/*
 			 * Alternatively,for streaming media you can use
 			 * mVideoView.setVideoURI(Uri.parse(URLstring));
@@ -75,6 +74,10 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			mVideoView.start();
 		}
 		
+		final CharSequence strDialogTitle = "Please Wait...";
+		final CharSequence strDialogBody = "Loading Video & Script...";
+		mProgressDialog = ProgressDialog.show(PlayActivity.this, strDialogTitle, strDialogBody, true);
+	
 		new Thread(new Runnable() 
 		{ 
 		    @Override
@@ -82,29 +85,30 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		   { 
 		        try {
 		        	getScriptContent();
+		        	handler.sendEmptyMessage(0);
 		        	if (MainActivity.isDebug) {
-		        		Log.e("gray", cnnScriptContent);   
+		        		Log.e("gray", "PlayActivity.java:run, " + cnnScriptContent);
 					}
-					
 				} catch (Exception e) {
-					Log.e("gray", "Exception e:" + e.toString());    
+					Log.e("gray", "PlayActivity.java:run, Exception e:" + e.toString());    
 					e.printStackTrace();
 				}
 		   } 
 		}).start();
 		
-		while( !isgetCNNSTitleOK ){
-			try {
-				Thread.sleep(50);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java: END =================");
 		}
-		
-		setResultText(cnnScriptContent);
-		Log.e("gray", "PlayActivity.java: END =================");
 	}
 
+	Handler handler = new Handler() {  
+        @Override  
+        public void handleMessage(Message msg) {
+        	setResultText(cnnScriptContent);
+		    mProgressDialog.dismiss();
+        }  
+    };  
+    
 	public void getScriptContent() throws Exception {
 		
 		if (MainActivity.isDebug) {
@@ -132,7 +136,9 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	    // process data if found any node
 	    if(statsNode.length > 0) {
 	    	
-	    	Log.e("gray", "MainActivity.java:getScriptContent, statsNode.length:" + statsNode.length);
+	    	if (MainActivity.isDebug) {
+	    		Log.e("gray", "MainActivity.java:getScriptContent, statsNode.length:" + statsNode.length);
+			}
 	    	
 	    	for (int i = 0; i < statsNode.length; i++) {
 				
@@ -174,9 +180,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	    		Log.e("gray", "PlayActivity.java: " + tsa[i]);
 	    	}
 		}
-	    
-	    isgetCNNSTitleOK = true;
-	    
 	}
 
 	public void setResultText(String s){
@@ -193,13 +196,16 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	
 	@Override
 	protected void onDestroy() {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java: onDestroy");
+		}
 		super.onDestroy();
 	}
 
 	@Override
 	public void onCompletion(MediaPlayer mp) {
 		if (MainActivity.isDebug) {
-			Log.e("gray", "PlayActivity.java: " + "");
+			Log.e("gray", "PlayActivity.java: onCompletion");
 		}
 	}
 	
