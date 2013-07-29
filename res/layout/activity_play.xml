@@ -33,24 +33,13 @@
                 android:id="@+id/tv_webContent"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:clickable="true"
                 android:paddingLeft="5dp"
                 android:paddingRight="5dp"
                 android:paddingTop="5dp"
                 android:textAllCaps="false"
                 android:textIsSelectable="true"
-                android:textSize="18sp"
-                 />
-
-            <EditText
-                android:id="@+id/editText_webContent"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ems="10"
-                android:focusable="false"
-                android:inputType="textMultiLine" >
-
-                <requestFocus />
-            </EditText>
+                android:textSize="18sp" />
             
         </LinearLayout>
     </ScrollView>
