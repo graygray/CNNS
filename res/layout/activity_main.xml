@@ -4,35 +4,14 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity" >
 
-    <RelativeLayout
-        android:id="@+id/relativeLayout1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:paddingBottom="@dimen/activity_horizontal_margin" >
-
         <ListView
             android:id="@+id/mainListView"
             android:layout_width="wrap_content"
-            android:layout_height="390dp"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true"
+            android:layout_height="wrap_content"
+            android:paddingBottom="100dp"
             android:paddingLeft="10dp"
             android:paddingTop="5dp" >
-
         </ListView>
-
-    </RelativeLayout>
-
-    <RelativeLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentRight="true"
-        android:layout_below="@+id/relativeLayout1" >
 
         <LinearLayout
             android:id="@+id/ADLayout"
@@ -40,9 +19,6 @@
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:orientation="vertical" >
-
         </LinearLayout>
-
-    </RelativeLayout>
 
 </RelativeLayout>

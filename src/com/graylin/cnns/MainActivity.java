@@ -20,7 +20,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
+import android.content.pm.PackageManager;	
 import android.content.pm.ResolveInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -69,16 +69,18 @@ public class MainActivity extends Activity {
 	
 	// HTML page
 	public static final String CNNS_URL = "http://edition.cnn.com/US/studentnews/quick.guide/archive/";
-    // XPath query
-	public static String XPATH_resultS = "";
-	public static String resultString = "";
 	
-	// AD here
+    // XPath query
+	public String XPATH_resultS = "";
+	public String resultString = "";
+	
+	// AD
 	public AdView adView;
 	
-	// ProgressDialog, wait network effort over
+	// ProgressDialog, wait network effort to be done
 	public ProgressDialog mProgressDialog;
 	
+	// SharedPreferences instance
 	public static SharedPreferences sharedPrefs;
 	public static SharedPreferences.Editor sharedPrefsEditor;
 	
@@ -96,7 +98,7 @@ public class MainActivity extends Activity {
 		}
 		
 		// load AD
-		adView = new AdView(this, AdSize.BANNER, "a151e4fa6d7cf0e");
+		adView = new AdView(this, AdSize.SMART_BANNER, "a151e4fa6d7cf0e");
 		LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
 		layout.addView(adView);
 		adView.loadAd(new AdRequest());
@@ -107,6 +109,7 @@ public class MainActivity extends Activity {
 		
 		// get initial data
 		isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
+		isEnableDownload = true;
         textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", "18"));
         if (textSize < 8) {
         	textSize = 8;
@@ -115,7 +118,7 @@ public class MainActivity extends Activity {
         	textSize = 50;
         }
 		
-		// check if need to updtae, set isLoadedToday = true / false
+		// check if need to update, set isLoadedToday = true / false
 		// get current date 
 		SimpleDateFormat s = new SimpleDateFormat("ddMMyyyy");
 		String currentDate = s.format(new Date());
@@ -135,8 +138,20 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: isLoadedToday: " + isLoadedToday);
 		}
 		
-		// loaded earlier, get stored data
-		if (isLoadedToday) {	
+		
+		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
+		
+		// loaded earlier or no available network, get stored data
+		if (isLoadedToday || networInfo == null || !networInfo.isAvailable()) {	
+			
+			if (networInfo == null || !networInfo.isAvailable()){
+				Log.e("gray", "MainActivity.java, NO CONNECTIVITY_SERVICE");
+				AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+		        dialog.setTitle("Alert Message");
+		        dialog.setMessage("No Availiable Network!!");
+		        dialog.show();
+			}
 			
 			for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
 				cnnListStringArray[i] = sharedPrefs.getString("cnnListString_"+i, "");
@@ -148,150 +163,31 @@ public class MainActivity extends Activity {
 				}
 			}
 			
-		   	// Get ListView object from res
-		    listView = (ListView) findViewById(R.id.mainListView);
-		    
-		    // Define a new Adapter
-		    // First parameter - Context
-		    // Second parameter - Layout for the row
-		    // Third parameter - ID of the TextView to which the data is written
-		    // Forth - the Array of data
-		    adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, cnnListStringArray);
-
-		    // Assign adapter to ListView
-		    listView.setAdapter(adapter); 
-		    
-		    // ListView Item Click Listener
-		    listView.setOnItemClickListener(new OnItemClickListener() {
-
-				@Override
-				public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
-					
-					Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
-					String [] tempSA = new String [20];
-					tempSA = cnnScriptAddrStringArray[position].split("/");
-					
-					if (isDebug) {
-						for (int i = 0; i < tempSA.length; i++) {
-							Log.e("gray", "MainActivity.java: " + tempSA[i]);
-						}
-					}
-					
-					int year, month;
-					String day;
-					
-					year = Integer.valueOf(tempSA[1]) - 2000;
-//					month = Integer.valueOf(tempSA[2]);
-					day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
-					
-					scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
-					videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
-
-					if (isDebug) {
-						Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString:" + scriptAddressString);
-						Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString:" + videoAddressString);
-					}
-				
-					Intent intent = new Intent();
-					intent.setClass(MainActivity.this, PlayActivity.class);
-					startActivity(intent);
-				}
-		    }); 
-		
+			showListView();
+			
 		// never loaded, get data from network
 		} else {				
+				
+			final CharSequence strDialogTitle = "Please Wait...";
+			final CharSequence strDialogBody = "Getting Data From CNN Student News...";
+			mProgressDialog = ProgressDialog.show(MainActivity.this, strDialogTitle, strDialogBody, true);
 			
-			ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-			NetworkInfo networInfo = conManager.getActiveNetworkInfo();
-			if (networInfo == null || !networInfo.isAvailable()){
-				
-				Log.e("gray", "MainActivity.java, NO CONNECTIVITY_SERVICE");
-				AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
-		        dialog.setTitle("Alert Message");
-		        dialog.setMessage("No Availiable Network!!");
-		        dialog.show();
-		        
-				for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
-					cnnListStringArray[i] = sharedPrefs.getString("cnnListString_"+i, "");
-					cnnScriptAddrStringArray[i] = sharedPrefs.getString("cnnScriptAddrString_"+i, "");
-					
-					if (isDebug) {
-						Log.e("gray", "MainActivity.java: cnnListStringArray[i]:" + cnnListStringArray[i]);
-						Log.e("gray", "MainActivity.java: cnnScriptAddrStringArray[i]:" + cnnScriptAddrStringArray[i]);
-					}
-				}
-				
-			   	// Get ListView object from res
-			    listView = (ListView) findViewById(R.id.mainListView);
-			    
-			    // Define a new Adapter
-			    // First parameter - Context
-			    // Second parameter - Layout for the row
-			    // Third parameter - ID of the TextView to which the data is written
-			    // Forth - the Array of data
-			    adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, cnnListStringArray);
-
-			    // Assign adapter to ListView
-			    listView.setAdapter(adapter); 
-			    
-			    // ListView Item Click Listener
-			    listView.setOnItemClickListener(new OnItemClickListener() {
-
-					@Override
-					public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
-						
-						Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
-						String [] tempSA = new String [20];
-						tempSA = cnnScriptAddrStringArray[position].split("/");
-						
-						if (isDebug) {
-							for (int i = 0; i < tempSA.length; i++) {
-								Log.e("gray", "MainActivity.java: " + tempSA[i]);
-							}
-						}
-						
-						int year, month;
-						String day;
-						
-						year = Integer.valueOf(tempSA[1]) - 2000;
-//						month = Integer.valueOf(tempSA[2]);
-						day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
-						
-						scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
-						videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
-
-						if (isDebug) {
-							Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString:" + scriptAddressString);
-							Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString:" + videoAddressString);
-						}
-					
-						Intent intent = new Intent();
-						intent.setClass(MainActivity.this, PlayActivity.class);
-						startActivity(intent);
-					}
-			    }); 
-		        
-			} else {
-				
-				final CharSequence strDialogTitle = "Please Wait...";
-				final CharSequence strDialogBody = "Getting Data From CNN Student News...";
-				mProgressDialog = ProgressDialog.show(MainActivity.this, strDialogTitle, strDialogBody, true);
-				
-				new Thread(new Runnable() 
+			new Thread(new Runnable() 
+			{ 
+				@Override
+				public void run() 
 				{ 
-					@Override
-					public void run() 
-					{ 
-						try {
-							getCNNSTitle();
-							handler.sendEmptyMessage(0);
-						} catch (Exception e) {
-							Log.e("gray", "MainActivity.java:run, Exception e = " + e.toString());
-							e.printStackTrace();
-						}
-					} 
-				}).start();
-			}
+					try {
+						getCNNSTitle();
+						
+						// send message to show list view
+						handler.sendEmptyMessage(0);
+					} catch (Exception e) {
+						Log.e("gray", "MainActivity.java:run, Exception e = " + e.toString());
+						e.printStackTrace();
+					}
+				} 
+			}).start();
 		}
 		
 //		Button btn_go = (Button) findViewById(R.id.button_test);
@@ -333,60 +229,66 @@ public class MainActivity extends Activity {
 		}
 	}
 	
+	public void showListView() {
+		
+		// Get ListView object from res
+	    listView = (ListView) findViewById(R.id.mainListView);
+	    
+	    // Define a new Adapter
+	    // First parameter - Context
+	    // Second parameter - Layout for the row
+	    // Third parameter - ID of the TextView to which the data is written
+	    // Forth - the Array of data
+	    adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, cnnListStringArray);
+
+	    // Assign adapter to ListView
+	    listView.setAdapter(adapter); 
+	    
+	    // ListView Item Click Listener
+	    listView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
+				
+				Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
+				String [] tempSA = new String [20];
+				tempSA = cnnScriptAddrStringArray[position].split("/");
+				
+				if (isDebug) {
+					for (int i = 0; i < tempSA.length; i++) {
+						Log.e("gray", "MainActivity.java: " + tempSA[i]);
+					}
+				}
+				
+				int year;
+//				int month;
+				String day;
+				
+				year = Integer.valueOf(tempSA[1]) - 2000;
+//				month = Integer.valueOf(tempSA[2]);
+				day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
+				
+				scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
+				videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
+
+				if (isDebug) {
+					Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString:" + scriptAddressString);
+					Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString:" + videoAddressString);
+				}
+			
+				Intent intent = new Intent();
+				intent.setClass(MainActivity.this, PlayActivity.class);
+				startActivity(intent);
+			}
+	    }); 
+		
+	}
+	
 	Handler handler = new Handler() {  
         @Override  
         public void handleMessage(Message msg) {
         	
-        	// Get ListView object from res
-		    listView = (ListView) findViewById(R.id.mainListView);
-		    
-		    // Define a new Adapter
-		    // First parameter - Context
-		    // Second parameter - Layout for the row
-		    // Third parameter - ID of the TextView to which the data is written
-		    // Forth - the Array of data
-		    adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, cnnListStringArray);
-
-		    // Assign adapter to ListView
-		    listView.setAdapter(adapter); 
-		    
-		    // ListView Item Click Listener
-		    listView.setOnItemClickListener(new OnItemClickListener() {
-
-				@Override
-				public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
-					
-					Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
-					String [] tempSA = new String [20];
-					tempSA = cnnScriptAddrStringArray[position].split("/");
-					
-					if (isDebug) {
-						for (int i = 0; i < tempSA.length; i++) {
-							Log.e("gray", "MainActivity.java: " + tempSA[i]);
-						}
-					}
-					
-					int year, month;
-					String day;
-					
-					year = Integer.valueOf(tempSA[1]) - 2000;
-//					month = Integer.valueOf(tempSA[2]);
-					day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
-					
-					scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
-					videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
-
-					if (isDebug) {
-						Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString:" + scriptAddressString);
-						Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString:" + videoAddressString);
-					}
-				
-					Intent intent = new Intent();
-					intent.setClass(MainActivity.this, PlayActivity.class);
-					startActivity(intent);
-				}
-		    }); 
-		    
+        	showListView();
 		    mProgressDialog.dismiss();
         }  
     };  

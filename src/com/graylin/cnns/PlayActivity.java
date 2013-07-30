@@ -66,25 +66,29 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_play);
 		
+		// network status
+		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
+		
 		cnnVideoPath = MainActivity.getVideoAddress();
 		cnnScriptPath = MainActivity.getScriptAddress();
-		
-		String [] tempSA = new String [20];
-		tempSA = cnnVideoPath.split("/");
-		
-		if (MainActivity.isDebug) {
-			Log.e("gray", "PlayActivity.java: arrayLength:" + tempSA.length);
-			for (int i = 0; i < tempSA.length; i++) {
-				Log.e("gray", "MainActivity.java: " + tempSA[i]);
-			}
-		}
-		
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: START ===============");
 			Log.e("gray", "PlayActivity.java: cnnVideoPath : " + cnnVideoPath);
 			Log.e("gray", "PlayActivity.java: cnnScriptPath : " + cnnScriptPath);
 		}
 		
+		String [] tempSA = new String [20];
+		tempSA = cnnVideoPath.split("/");
+		
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java: cnnVideoPath.split(\"/\"), arrayLength:" + tempSA.length);
+			for (int i = 0; i < tempSA.length; i++) {
+				Log.e("gray", "PlayActivity.java: cnnVideoPath:" + tempSA[i]);
+			}
+		}
+		
+		// check if video file already download, or set path to local dir
 		cnnVideoName = tempSA[tempSA.length - 1];
 		if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName)) {
 			cnnVideoPath = Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName;
@@ -116,21 +120,22 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			mVideoView.start();
 		}
 		
+		// check if script file already download, if Y, open saved file, or download from network
 		if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".txt")) {
+			
 			try {
 				cnnScriptContent =  readFileAsString( Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".txt");
 				setResultText(cnnScriptContent);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
+				Log.e("gray", "PlayActivity.java:run, read script file, Exception e:" + e.toString()); 
 				e.printStackTrace();
 			}
+			
 		} else {
 			
-			ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-			NetworkInfo networInfo = conManager.getActiveNetworkInfo();
 			if (networInfo == null || !networInfo.isAvailable()){
 				
-				Log.e("gray", "MainActivity.java, NO CONNECTIVITY_SERVICE");
+				Log.e("gray", "PlayActivity.java, NO Available Network!!");
 				AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
 		        dialog.setTitle("Alert Message");
 		        dialog.setMessage("No Availiable Network!!");
@@ -224,31 +229,31 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		
 
 		if (MainActivity.isDebug) {
-			Log.e("gray", "PlayActivity.java: "+ Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName);
+			Log.e("gray", "PlayActivity.java: video file path: "+ Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName);
 		}
-		// download video
-		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
 		
+		// if Enable Download &&  video file not exist, download it
 		if (MainActivity.isEnableDownload && 
-			!isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName) && 
-			( networInfo != null || networInfo.isAvailable()) ){
+			!isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName) ){
 			
-			String url = cnnVideoPath;
-			DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-			request.setDescription("to /sdcard/download");
-			request.setTitle(cnnVideoName);
-			// in order for this if to run, you must use the android 3.2 to compile your app
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-				request.allowScanningByMediaScanner();
-				request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+			// check network ststus
+			if ( !(networInfo == null || !networInfo.isAvailable()) ) {
+				
+				String url = cnnVideoPath;
+				DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+				request.setDescription("to /sdcard/download");
+				request.setTitle(cnnVideoName);
+				// in order for this if to run, you must use the android 3.2 to compile your app
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+					request.allowScanningByMediaScanner();
+					request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+				}
+				request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, cnnVideoName);
+				
+				// get download service and enqueue file
+				DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+				manager.enqueue(request);
 			}
-			request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, cnnVideoName);
-			
-			// get download service and enqueue file
-			DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-			manager.enqueue(request);
-			
 		}
 		
 		if (MainActivity.isDebug) {
@@ -270,6 +275,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
         public void handleMessage(Message msg) {
         	setResultText(cnnScriptContent);
         	
+        	// save script content to local
         	FileWriter fw;
 			try {
 				fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".txt", false);
@@ -278,6 +284,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 				bw.close();
 				
 			} catch (IOException e) {
+				Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
 				e.printStackTrace();
 			}
             
@@ -348,15 +355,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			Log.e("gray", "PlayActivity.java: " + "statsNode.length < 0");
 		}
 	
-//	    if (MainActivity.isDebug) {
-//
-//	    	String [] tsa = new String [100]; 
-//	    	tsa = cnnScriptContent.split("	");
-//	    	for (int i = 0; i < tsa.length; i++) {
-//	    		Log.e("gray", "PlayActivity.java: " + tsa[i]);
-//	    	}
-//		}
-	    
 	}
 
 	public String readFileAsString(String filePath) throws java.io.IOException
@@ -395,6 +393,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		}
 	}
 	
+	// do't show settings at this page
 //	@Override
 //	public boolean onCreateOptionsMenu(Menu menu) {
 //		// Inflate the menu; this adds items to the action bar if it is present.
