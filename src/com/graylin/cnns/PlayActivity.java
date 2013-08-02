@@ -42,6 +42,7 @@ import android.view.View.OnTouchListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.MediaController;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
@@ -91,33 +92,30 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		// check if video file already download, or set path to local dir
 		cnnVideoName = tempSA[tempSA.length - 1];
 		if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName)) {
+			
 			cnnVideoPath = Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName;
-		}
-		
-		mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
-		mVideoView.setOnCompletionListener(this);
-		DisplayMetrics dm = new DisplayMetrics();
-		this.getWindowManager().getDefaultDisplay().getMetrics(dm);
-		// MyVideoView.WIDTH=dm.widthPixels;
-		// MyVideoView.HEIGHT=dm.heightPixels;
-		if (cnnVideoPath == "") {
-			// Tell the user to provide a media file URL/path.
-			Toast.makeText(PlayActivity.this, "video URL/path not exist!", Toast.LENGTH_LONG).show();
-			Log.e("gray", "PlayActivity.java: " + "video URL/path not exist!");
+			playVideo();
 			
 		} else {
-			/*
-			 * Alternatively,for streaming media you can use
-			 * mVideoView.setVideoURI(Uri.parse(URLstring));
-			 */
-			mVideoView.setVideoPath(cnnVideoPath);
-			// mVideoView.setVideoURI(Uri.parse("android.resource://ss.ss/"+R.raw.main));
+			
+			if (networInfo == null || !networInfo.isAvailable()){
+				
+				Log.e("gray", "PlayActivity.java, NO Available Network!!");
+				AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
+		        dialog.setTitle("Alert Message : video");
+		        dialog.setMessage("No Availiable Network!!");
+		        dialog.show();
+		        
+		        mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
+		        RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, 10);
+		        mVideoView.setLayoutParams(videoviewlp);
+		        mVideoView.invalidate();
+		        
+			} else {
+				
+				playVideo();
 
-			// control bar
-			mVideoView.setMediaController(new MediaController(this));
-			// mVideoView.requestFocus();
-			// start play
-			mVideoView.start();
+			}
 		}
 		
 		// check if script file already download, if Y, open saved file, or download from network
@@ -137,7 +135,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 				
 				Log.e("gray", "PlayActivity.java, NO Available Network!!");
 				AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
-		        dialog.setTitle("Alert Message");
+		        dialog.setTitle("Alert Message - script");
 		        dialog.setMessage("No Availiable Network!!");
 		        dialog.show();
 			
@@ -226,7 +224,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 //		        return gestureDetector.onTouchEvent(event);
 //		    }
 //		});
-		
 
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: video file path: "+ Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName);
@@ -261,7 +258,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		}
 	}
 	
-	public static boolean isFileExist(String path) {
+	public boolean isFileExist(String path) {
 		File file = new File(path);
 		if (!file.exists()) {
 			return false;
@@ -270,6 +267,28 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		}
 	}
 
+	public void playVideo(){
+		
+		mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
+		mVideoView.setOnCompletionListener(this);
+		DisplayMetrics dm = new DisplayMetrics();
+		this.getWindowManager().getDefaultDisplay().getMetrics(dm);
+		// MyVideoView.WIDTH=dm.widthPixels;
+		// MyVideoView.HEIGHT=dm.heightPixels;
+		/*
+		 * Alternatively,for streaming media you can use
+		 * mVideoView.setVideoURI(Uri.parse(URLstring));
+		 */
+		mVideoView.setVideoPath(cnnVideoPath);
+		// mVideoView.setVideoURI(Uri.parse("android.resource://ss.ss/"+R.raw.main));
+
+		// control bar
+		mVideoView.setMediaController(new MediaController(this));
+		// mVideoView.requestFocus();
+		// start play
+		mVideoView.start();
+	}
+	
 	Handler handler = new Handler() {  
         @Override  
         public void handleMessage(Message msg) {

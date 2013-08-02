@@ -1,8 +1,11 @@
 package com.graylin.cnns;
 
+import java.io.File;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 
 import org.htmlcleaner.CleanerProperties;
@@ -12,6 +15,7 @@ import org.htmlcleaner.TagNode;
 import com.google.ads.AdRequest;
 import com.google.ads.AdSize;
 import com.google.ads.AdView;
+import com.google.ads.z;
   
 import android.app.Activity;  
 import android.app.AlertDialog;
@@ -22,6 +26,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;	
 import android.content.pm.ResolveInfo;
+import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -32,6 +37,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -42,6 +48,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;  
+import android.widget.SimpleAdapter;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
@@ -97,6 +104,15 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: START ===============");
 		}
 		
+//		Display display = getWindowManager().getDefaultDisplay();
+//		Point size = new Point();
+//		display.getSize(size);
+//		int width = size.x;
+//		int height = size.y;
+//		if (isDebug) {
+//			Log.e("gray", "MainActivity.java: width -- height" + width + " -- " + height);
+//		}
+		
 		// load AD
 		adView = new AdView(this, AdSize.SMART_BANNER, "a151e4fa6d7cf0e");
 		LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
@@ -109,7 +125,6 @@ public class MainActivity extends Activity {
 		
 		// get initial data
 		isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
-		isEnableDownload = true;
         textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", "18"));
         if (textSize < 8) {
         	textSize = 8;
@@ -120,7 +135,7 @@ public class MainActivity extends Activity {
 		
 		// check if need to update, set isLoadedToday = true / false
 		// get current date 
-		SimpleDateFormat s = new SimpleDateFormat("ddMMyyyy");
+		SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd-KK");
 		String currentDate = s.format(new Date());
 		
 		// get last update date
@@ -136,8 +151,8 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: currentDate: " + currentDate);
 			Log.e("gray", "MainActivity.java: lastUpdateDate: " + lastUpdateDate);
 			Log.e("gray", "MainActivity.java: isLoadedToday: " + isLoadedToday);
+//			isLoadedToday = false;
 		}
-		
 		
 		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
 		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
@@ -209,23 +224,42 @@ public class MainActivity extends Activity {
 		super.onActivityResult(requestCode, resultCode, data);
 
 		if (isDebug) {
-			Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getBoolean("pref_download", false) );
-			Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getString("pref_textSize", "") );
+			Log.e("gray", "MainActivity.java: onActivityResult, requestCode: " + requestCode);
 		}
 		
-        isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
-        		
-        textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", ""));
-        if (textSize < 8) {
-        	textSize = 8;
-		}
-        if (textSize > 50){
-        	textSize = 50;
-        }
+		// reload AD
+		adView.loadAd(new AdRequest());
+		
         switch (requestCode) {
 		case 0:
+			if (isDebug) {
+				Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getBoolean("pref_download", false) );
+				Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getString("pref_textSize", "") );
+			}
+			
+			isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
+			
+			textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", ""));
+			if (textSize < 8) {
+				textSize = 8;
+			}
+			if (textSize > 50){
+				textSize = 50;
+			}
+			break;
+		case 1:
+			showListView();
 			break;
 
+		}
+	}
+	
+	public boolean isFileExist(String path) {
+		File file = new File(path);
+		if (!file.exists()) {
+			return false;
+		} else {
+			return true;
 		}
 	}
 	
@@ -234,23 +268,65 @@ public class MainActivity extends Activity {
 		// Get ListView object from res
 	    listView = (ListView) findViewById(R.id.mainListView);
 	    
+	    ArrayList<HashMap<String, Object>> listItem = new ArrayList<HashMap<String, Object>>();  
+        for(int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
+        	
+        	HashMap<String, Object> map = new HashMap<String, Object>();  
+        	
+        	String [] tempSA = new String [20];
+        	String cnnVideoName;
+    		tempSA = cnnScriptAddrStringArray[i].split("/");
+			int year;
+			String day;
+			
+			year = Integer.valueOf(tempSA[1]) - 2000;
+			day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
+			
+    		// check if video file already download, or set path to local dir
+    		cnnVideoName = "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix;
+    		if (isDebug) {
+    			Log.e("gray", "path: " + Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName);
+			}
+    		
+            map.put("ItemTitle", cnnListStringArray[i]);
+            
+            if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".txt")) {
+            	map.put("ItemImage_news", R.drawable.ic_newspaper_o);  
+            } else {
+            	map.put("ItemImage_news", R.drawable.ic_newspaper_x);  
+			}
+            
+            if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName)) {
+            	map.put("ItemImage_video", R.drawable.ic_video_o);  
+            } else {
+            	map.put("ItemImage_video", R.drawable.ic_video_x);  
+			}
+            listItem.add(map);  
+        }  
+	    
+        SimpleAdapter listItemAdapter = new SimpleAdapter(this,listItem, R.layout.cnn_listview, new String[] {"ItemTitle","ItemImage_news", "ItemImage_video"}, new int[] {R.id.ItemTitle,R.id.ItemImage_news,R.id.ItemImage_video});  
+            
+        listView.setAdapter(listItemAdapter);  
+        
 	    // Define a new Adapter
 	    // First parameter - Context
 	    // Second parameter - Layout for the row
 	    // Third parameter - ID of the TextView to which the data is written
 	    // Forth - the Array of data
-	    adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, cnnListStringArray);
-
-	    // Assign adapter to ListView
-	    listView.setAdapter(adapter); 
-	    
-	    // ListView Item Click Listener
+//	    adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, cnnListStringArray);
+//
+//	    // Assign adapter to ListView
+//	    listView.setAdapter(adapter); 
+//	    
+//	    // ListView Item Click Listener
 	    listView.setOnItemClickListener(new OnItemClickListener() {
 
 			@Override
 			public void onItemClick(AdapterView<?> arg0, View arg1, int position, long id) {
 				
-				Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
+				if (isDebug) {
+					Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
+				}
 				String [] tempSA = new String [20];
 				tempSA = cnnScriptAddrStringArray[position].split("/");
 				
@@ -278,7 +354,7 @@ public class MainActivity extends Activity {
 			
 				Intent intent = new Intent();
 				intent.setClass(MainActivity.this, PlayActivity.class);
-				startActivity(intent);
+				startActivityForResult(intent, 1);
 			}
 	    }); 
 		
@@ -335,7 +411,7 @@ public class MainActivity extends Activity {
 	    		
 	    		if (resultS.regionMatches(0, matchString, 0, matchString.length())) {
 					
-	    			resultS = resultS.replace("CNN Student News Transcript -", ">>>> ");
+	    			resultS = resultS.replace("CNN Student News Transcript -", "");
 	    			cnnListStringArray[arrayIndex] = resultS;
 	    			cnnScriptAddrStringArray[arrayIndex] = resultNode.getAttributeByName("href");
 	    			
@@ -347,7 +423,9 @@ public class MainActivity extends Activity {
 	    			
 	    			arrayIndex++;
 				} else {
-					Log.e("gray", "MainActivity.java: string not match!!" );
+					if (isDebug) {
+						Log.e("gray", "MainActivity.java: string not match!!" );
+					}
 				}
 	    	}
 	    	
@@ -368,7 +446,10 @@ public class MainActivity extends Activity {
 	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		Log.e("gray", "MainActivity.java: onCreateOptionsMenu");
+
+		if (isDebug) {
+			Log.e("gray", "MainActivity.java: onCreateOptionsMenu");
+		}
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
@@ -389,7 +470,9 @@ public class MainActivity extends Activity {
 	@Override
 	public void onDestroy() {
 		
-		Log.e("gray", "MainActivity.java: onDestroy");	
+		if (isDebug) {
+			Log.e("gray", "MainActivity.java: onDestroy");	
+		}
 		if (adView != null) {
 			adView.destroy();
 		}

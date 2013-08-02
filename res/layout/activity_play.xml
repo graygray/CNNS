@@ -4,8 +4,8 @@
     android:layout_height="match_parent"
     tools:context=".PlayActivity" >
 
-    <LinearLayout
-        android:id="@+id/linearLayout1"
+    <RelativeLayout
+        android:id="@+id/RelativeLayout1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical" >
@@ -15,19 +15,26 @@
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content" />
 	    
-    </LinearLayout>
+    </RelativeLayout>
 
-    <TextView
-        android:id="@+id/tv_webContent"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/linearLayout1"
-        android:clickable="true"
-        android:paddingLeft="5dp"
-        android:paddingRight="5dp"
-        android:paddingTop="5dp"
-        android:textAllCaps="false"
-        android:textIsSelectable="true"
-        android:textSize="18sp" />
+    <ScrollView
+        android:id="@+id/scrollView1"
+        android:layout_below="@+id/RelativeLayout1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" >
+
+        <TextView
+            android:id="@+id/tv_webContent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
+            android:paddingTop="5dp"
+            android:textAllCaps="false"
+            android:textIsSelectable="true"
+            android:textSize="18sp" />
+
+    </ScrollView>
             
 </RelativeLayout>
