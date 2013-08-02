@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
@@ -31,6 +32,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -230,7 +233,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		}
 		
 		// if Enable Download &&  video file not exist, download it
-		if (MainActivity.isEnableDownload && 
+		if (MainActivity.isEnableDownload && isDownloadManagerAvailable(getApplicationContext()) &&
 			!isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName) ){
 			
 			// check network ststus
@@ -412,6 +415,26 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		}
 	}
 	
+	/**
+	 * @param context used to check the device version and DownloadManager information
+	 * @return true if the download manager is available
+	 */
+	public static boolean isDownloadManagerAvailable(Context context) {
+	    try {
+	        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD) {
+	            return false;
+	        }
+	        Intent intent = new Intent(Intent.ACTION_MAIN);
+	        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+	        intent.setClassName("com.android.providers.downloads.ui", "com.android.providers.downloads.ui.DownloadList");
+	        List<ResolveInfo> list = context.getPackageManager().queryIntentActivities(intent,
+	                PackageManager.MATCH_DEFAULT_ONLY);
+	        return list.size() > 0;
+	    } catch (Exception e) {
+	        return false;
+	    }
+	}
+	
 	// do't show settings at this page
 //	@Override
 //	public boolean onCreateOptionsMenu(Menu menu) {
@@ -419,5 +442,4 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 //		getMenuInflater().inflate(R.menu.play, menu);
 //		return true;
 //	}
-
 }

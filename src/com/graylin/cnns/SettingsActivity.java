@@ -211,7 +211,7 @@ public class SettingsActivity extends PreferenceActivity {
 			// updated to reflect the new value, per the Android Design
 			// guidelines.
 			bindPreferenceSummaryToValue(findPreference("pref_textSize"));
-			bindPreferenceSummaryToValue(findPreference("example_list"));
+//			bindPreferenceSummaryToValue(findPreference("example_list"));
 		}
 	}
 
@@ -231,7 +231,7 @@ public class SettingsActivity extends PreferenceActivity {
 			// to their values. When their values change, their summaries are
 			// updated to reflect the new value, per the Android Design
 			// guidelines.
-			bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
+//			bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
 		}
 	}
 
@@ -250,7 +250,7 @@ public class SettingsActivity extends PreferenceActivity {
 			// to their values. When their values change, their summaries are
 			// updated to reflect the new value, per the Android Design
 			// guidelines.
-			bindPreferenceSummaryToValue(findPreference("sync_frequency"));
+//			bindPreferenceSummaryToValue(findPreference("sync_frequency"));
 		}
 	}
 }

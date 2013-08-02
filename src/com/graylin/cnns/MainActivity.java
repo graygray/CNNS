@@ -456,11 +456,20 @@ public class MainActivity extends Activity {
 	
 	@Override
     public boolean onOptionsItemSelected(MenuItem item) {
+		
+		if (isDebug) {
+			Log.e("gray", "MainActivity.java:onOptionsItemSelected, " + "");
+		}
         switch (item.getItemId()) {
  
         case R.id.action_settings:
             Intent i = new Intent(this, SettingsActivity.class);
             startActivityForResult(i, 0);
+            break;
+            
+        case R.id.action_info:
+        	Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
+
             break;
         }
  
@@ -479,24 +488,4 @@ public class MainActivity extends Activity {
 		super.onDestroy();
 	}
 
-	/**
-	 * @param context used to check the device version and DownloadManager information
-	 * @return true if the download manager is available
-	 */
-	public static boolean isDownloadManagerAvailable(Context context) {
-	    try {
-	        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.GINGERBREAD) {
-	            return false;
-	        }
-	        Intent intent = new Intent(Intent.ACTION_MAIN);
-	        intent.addCategory(Intent.CATEGORY_LAUNCHER);
-	        intent.setClassName("com.android.providers.downloads.ui", "com.android.providers.downloads.ui.DownloadList");
-	        List<ResolveInfo> list = context.getPackageManager().queryIntentActivities(intent,
-	                PackageManager.MATCH_DEFAULT_ONLY);
-	        return list.size() > 0;
-	    } catch (Exception e) {
-	        return false;
-	    }
-	}
-	
 }
