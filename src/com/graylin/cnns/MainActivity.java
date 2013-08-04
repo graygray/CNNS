@@ -53,8 +53,8 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	 
-	public static boolean isDebug = false;
-//	public static boolean isDebug = true;
+//	public static boolean isDebug = false;
+	public static boolean isDebug = true;
 
 	public static boolean isLoadedToday = false;
 
@@ -103,15 +103,6 @@ public class MainActivity extends Activity {
 		if (isDebug) {
 			Log.e("gray", "MainActivity.java: START ===============");
 		}
-		
-//		Display display = getWindowManager().getDefaultDisplay();
-//		Point size = new Point();
-//		display.getSize(size);
-//		int width = size.x;
-//		int height = size.y;
-//		if (isDebug) {
-//			Log.e("gray", "MainActivity.java: width -- height" + width + " -- " + height);
-//		}
 		
 		// load AD
 		adView = new AdView(this, AdSize.SMART_BANNER, "a151e4fa6d7cf0e");
@@ -391,12 +382,12 @@ public class MainActivity extends Activity {
 	    TagNode root = htmlCleaner.clean(url);
 	
 	    // query XPath
-	    XPATH_resultS = "//div[@class='cnn_spccovt1cllnk cnn_spccovt1cll2']//h2//a";
-	    Object[] resultSNode = root.evaluateXPath(XPATH_resultS);
+//	    XPATH_resultS = "//div[@class='cnn_spccovt1cllnk cnn_spccovt1cll2']//h2//a";
+//	    Object[] resultSNode = root.evaluateXPath(XPATH_resultS);
 	    // process data if found any node
 	    
 	    XPATH_resultS = "//div[@class='archive-item story cnn_skn_spccovstrylst']//h2//a";
-	    resultSNode = root.evaluateXPath(XPATH_resultS);
+	    Object[] resultSNode = root.evaluateXPath(XPATH_resultS);
 	    // process data if found any node
 	    if(resultSNode.length > 0) {
 	    	

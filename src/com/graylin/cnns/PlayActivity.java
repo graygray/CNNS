@@ -6,13 +6,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
-
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
-
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.net.ConnectivityManager;
@@ -37,6 +36,7 @@ import android.content.pm.ResolveInfo;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
@@ -64,6 +64,9 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	public ProgressDialog mProgressDialog;
 	
 	public TextView mTextView;
+	public String translatedText = "";
+	
+	public static boolean backtwice = false;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -160,7 +163,11 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 								Log.e("gray", "PlayActivity.java:run, " + cnnScriptContent);
 							}
 						} catch (Exception e) {
-							Log.e("gray", "PlayActivity.java:run, Exception e:" + e.toString());    
+							Log.e("gray", "PlayActivity.java:run, Exception e:" + e.toString());  
+							
+							// gray.lin.trace : catch timeout or other exception
+							handler.sendEmptyMessage(0);
+							
 							e.printStackTrace();
 						}
 					} 
@@ -168,32 +175,65 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			}
 		}
 		
-//		mTextView = (TextView) findViewById(R.id.tv_webContent);
-//		mTextView.setOnClickListener(new View.OnClickListener(){
-//		    public void onClick(View v){
-//		    	TextView tv = (TextView) v;
-//                String s = tv
-//                        .getText()
-//                        .subSequence(tv.getSelectionStart(),
-//                                tv.getSelectionEnd()).toString();
-//                Log.e("tapped on:", s);
-//		    	
-//		    	Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + mTextView.getSelectionEnd());
-//		    }
-//		});
-//		
-//		mTextView.setOnLongClickListener(new View.OnLongClickListener() {
-//			
-//			@Override
-//			public boolean onLongClick(View v) {
-////				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
-//				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
-//				
-//				
-//				
-//				return false;
-//			}
-//		});
+		mTextView = (TextView) findViewById(R.id.tv_webContent);
+		
+		mTextView.setOnClickListener(new View.OnClickListener(){
+		    public void onClick(View v){
+		    	Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
+		    	Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
+		    	
+		    	// double click
+		    	if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
+					
+					final CharSequence strDialogTitle = "Please Wait...";
+					final CharSequence strDialogBody = "Translate...";
+					mProgressDialog = ProgressDialog.show(PlayActivity.this, strDialogTitle, strDialogBody, true);
+					
+					new Thread(new Runnable() 
+					{ 
+						@Override
+						public void run() 
+						{ 
+							try {
+								getTranslateString(mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
+								handler.sendEmptyMessage(1);
+								if (MainActivity.isDebug) {
+									Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
+								}
+							} catch (Exception e) {
+								Log.e("gray", "PlayActivity.java:run, Exception e:" + e.toString());  
+								
+								// gray.lin.trace : catch timeout or other exception
+								handler.sendEmptyMessage(0);
+								
+								e.printStackTrace();
+							}
+						} 
+					}).start();
+		    		
+//		    		new AlertDialog.Builder(PlayActivity.this).setTitle("title").setIcon( 
+//					android.R.drawable.ic_dialog_info)
+////					.setView( 
+////					new EditText(PlayActivity.this)).setPositiveButton("確定", null) 
+////					.setNegativeButton("取消" , null)
+//					.show();
+		    		
+				}
+		    	
+		    
+		    }
+		});
+		
+		mTextView.setOnLongClickListener(new View.OnLongClickListener() {
+			
+			@Override
+			public boolean onLongClick(View v) {
+				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
+				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
+				
+				return false;
+			}
+		});
 		
 		// dialog
 //		new AlertDialog.Builder(this).setTitle("請輸入").setIcon( 
@@ -292,23 +332,109 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		mVideoView.start();
 	}
 	
+	public void getTranslateString(CharSequence srcString) throws Exception {
+
+		translatedText = "";
+		String queryURL = "http://tw.dictionary.search.yahoo.com/search?p=stud&fr2=dict";
+//		String queryURL = "http://tw.dictionary.search.yahoo.com/search?p=";
+//		queryURL = queryURL + srcString + "&fr2=dict";
+//		String queryString = "";
+		
+		if (MainActivity.isDebug) {
+			Log.e("gray", "MainActivity.java:getTranslateString, queryURL:" + queryURL);
+		}
+	    
+	    // config cleaner properties
+	    HtmlCleaner htmlCleaner = new HtmlCleaner();
+	    CleanerProperties props = htmlCleaner.getProperties();
+	    props.setAllowHtmlInsideAttributes(false);
+	    props.setAllowMultiWordAttributes(true);
+	    props.setRecognizeUnicodeChars(true);
+	    props.setOmitComments(true);
+	    
+	    // create URL object
+	    URL url;
+	    TagNode root;
+	    url = new URL(queryURL);
+	    // get HTML page root node
+	    root = htmlCleaner.clean(url);
+	
+	    XPATH = "//span[@class='proun_type']";
+//	    XPATH = "//p[@class='explanation']";
+	    Object[] statsNode = root.evaluateXPath(XPATH);
+	    // process data if found any node
+	    if(statsNode.length > 0) {
+	    	
+	    	if (MainActivity.isDebug) {
+	    		Log.e("gray", "MainActivity.java:getTranslateString, statsNode.length:" + statsNode.length);
+			}
+	    	
+	    	for (int i = 0; i < statsNode.length; i++) {
+				
+	    		TagNode resultNode = (TagNode)statsNode[i];
+	    		// get text data from HTML node
+	    		translatedText += resultNode.getText().toString() + "  \n";
+			}
+	        
+	    } else {
+			Log.e("gray", "PlayActivity.java: " + "statsNode.length < 0");
+		}
+	    
+//	    XPATH = "//p[@class='cnnBodyText']";
+//	    statsNode = root.evaluateXPath(XPATH);
+//	    // process data if found any node
+//	    if(statsNode.length > 0) {
+//
+//	    	if (MainActivity.isDebug) {
+//	    		Log.e("gray", "MainActivity.java:getScriptContent, statsNode.length:" + statsNode.length);
+//			}
+//	    	
+//	    	for (int i = 0; i < statsNode.length; i++) {
+//				
+//	    		TagNode resultNode = (TagNode)statsNode[i];
+//	    		// get text data from HTML node
+//	    		cnnScriptContent += resultNode.getText().toString() + "\n\n";
+//			}
+//	        
+//	    } else {
+//			Log.e("gray", "PlayActivity.java: " + "statsNode.length < 0");
+//		}
+	}
+	
 	Handler handler = new Handler() {  
         @Override  
         public void handleMessage(Message msg) {
-        	setResultText(cnnScriptContent);
         	
-        	// save script content to local
-        	FileWriter fw;
-			try {
-				fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".txt", false);
-				BufferedWriter bw = new BufferedWriter(fw);
-				bw.write(cnnScriptContent);
-				bw.close();
+        	switch (msg.what) {
+			case 0:
 				
-			} catch (IOException e) {
-				Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
-				e.printStackTrace();
+				setResultText(cnnScriptContent);
+				// save script content to local
+				FileWriter fw;
+				try {
+					fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".txt", false);
+					BufferedWriter bw = new BufferedWriter(fw);
+					bw.write(cnnScriptContent);
+					bw.close();
+				} catch (IOException e) {
+					Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
+					e.printStackTrace();
+				}
+				break;
+
+			case 1:
+				
+				Log.e("gray", "PlayActivity.java: translatedText:" + translatedText);
+//				new AlertDialog.Builder(PlayActivity.this).setTitle("title").setIcon( 
+//						android.R.drawable.ic_dialog_info)
+////						.setView( 
+////						new EditText(PlayActivity.this)).setPositiveButton("確定", null) 
+////						.setNegativeButton("取消" , null)
+//						.show();
+//				break;
 			}
+        	
+				
             
 		    mProgressDialog.dismiss();
         }  
@@ -355,7 +481,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	    } else {
 			Log.e("gray", "PlayActivity.java: " + "statsNode.length < 0");
 		}
-
 	    
 	    XPATH = "//p[@class='cnnBodyText']";
 	    statsNode = root.evaluateXPath(XPATH);
@@ -376,7 +501,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	    } else {
 			Log.e("gray", "PlayActivity.java: " + "statsNode.length < 0");
 		}
-	
 	}
 
 	public String readFileAsString(String filePath) throws java.io.IOException
