@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
@@ -59,7 +60,6 @@ public class MainActivity extends Activity {
 	public static boolean isLoadedToday = false;
 
 	public static final int MAX_LIST_ARRAY_SIZE = 20;
-	
 	public static String[] cnnListStringArray = new String [MAX_LIST_ARRAY_SIZE];
 	public static String[] cnnScriptAddrStringArray = new String [MAX_LIST_ARRAY_SIZE];
 	
@@ -73,25 +73,21 @@ public class MainActivity extends Activity {
 	
 	public ListView listView;
 	public ArrayAdapter<String> adapter;
+	public AdView adView;
+	// ProgressDialog, wait network effort to be done
+	public ProgressDialog mProgressDialog;
 	
 	// HTML page
 	public static final String CNNS_URL = "http://edition.cnn.com/US/studentnews/quick.guide/archive/";
 	
     // XPath query
-	public String XPATH_resultS = "";
-	public String resultString = "";
-	
-	// AD
-	public AdView adView;
-	
-	// ProgressDialog, wait network effort to be done
-	public ProgressDialog mProgressDialog;
+	public String XPATH = "";
 	
 	// SharedPreferences instance
 	public static SharedPreferences sharedPrefs;
 	public static SharedPreferences.Editor sharedPrefsEditor;
 	
-	// setting var
+	// settings variable
 	public static boolean isEnableDownload;
 	public static int textSize;
 	
@@ -126,7 +122,7 @@ public class MainActivity extends Activity {
 		
 		// check if need to update, set isLoadedToday = true / false
 		// get current date 
-		SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd-KK");
+		SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd-KK", Locale.US);
 		String currentDate = s.format(new Date());
 		
 		// get last update date
@@ -152,7 +148,9 @@ public class MainActivity extends Activity {
 		if (isLoadedToday || networInfo == null || !networInfo.isAvailable()) {	
 			
 			if (networInfo == null || !networInfo.isAvailable()){
-				Log.e("gray", "MainActivity.java, NO CONNECTIVITY_SERVICE");
+				if (isDebug) {
+					Log.e("gray", "MainActivity.java, NO CONNECTIVITY_SERVICE");
+				}
 				AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
 		        dialog.setTitle("Alert Message");
 		        dialog.setMessage("No Availiable Network!!");
@@ -174,9 +172,7 @@ public class MainActivity extends Activity {
 		// never loaded, get data from network
 		} else {				
 				
-			final CharSequence strDialogTitle = "Please Wait...";
-			final CharSequence strDialogBody = "Getting Data From CNN Student News...";
-			mProgressDialog = ProgressDialog.show(MainActivity.this, strDialogTitle, strDialogBody, true);
+			showProcessDialog("Please Wait...", "Getting Data From CNN Student News...");
 			
 			new Thread(new Runnable() 
 			{ 
@@ -185,11 +181,9 @@ public class MainActivity extends Activity {
 				{ 
 					try {
 						getCNNSTitle();
-						
-						// send message to show list view
 						handler.sendEmptyMessage(0);
 					} catch (Exception e) {
-						Log.e("gray", "MainActivity.java:run, Exception e = " + e.toString());
+						Log.e("gray", "MainActivity.java:run, Exception:" + e.toString());
 						e.printStackTrace();
 					}
 				} 
@@ -216,6 +210,7 @@ public class MainActivity extends Activity {
 
 		if (isDebug) {
 			Log.e("gray", "MainActivity.java: onActivityResult, requestCode: " + requestCode);
+			Log.e("gray", "MainActivity.java: onActivityResult, resultCode: " + resultCode);
 		}
 		
 		// reload AD
@@ -223,6 +218,7 @@ public class MainActivity extends Activity {
 		
         switch (requestCode) {
 		case 0:
+			// back from settings page, get settings data
 			if (isDebug) {
 				Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getBoolean("pref_download", false) );
 				Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getString("pref_textSize", "") );
@@ -238,6 +234,7 @@ public class MainActivity extends Activity {
 				textSize = 50;
 			}
 			break;
+			
 		case 1:
 			showListView();
 			break;
@@ -265,13 +262,13 @@ public class MainActivity extends Activity {
         	HashMap<String, Object> map = new HashMap<String, Object>();  
         	
         	String [] tempSA = new String [20];
-        	String cnnVideoName;
+        	String cnnVideoName = "";
     		tempSA = cnnScriptAddrStringArray[i].split("/");
 			int year;
 			String day;
 			
 			year = Integer.valueOf(tempSA[1]) - 2000;
-			day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
+			day = String.format(Locale.US, "%02d", Integer.valueOf(tempSA[3]) + 1);
 			
     		// check if video file already download, or set path to local dir
     		cnnVideoName = "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix;
@@ -279,14 +276,17 @@ public class MainActivity extends Activity {
     			Log.e("gray", "path: " + Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName);
 			}
     		
+    		// put title
             map.put("ItemTitle", cnnListStringArray[i]);
             
+            // put script image
             if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".txt")) {
             	map.put("ItemImage_news", R.drawable.ic_newspaper_o);  
             } else {
             	map.put("ItemImage_news", R.drawable.ic_newspaper_x);  
 			}
             
+            // put video image
             if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName)) {
             	map.put("ItemImage_video", R.drawable.ic_video_o);  
             } else {
@@ -299,17 +299,6 @@ public class MainActivity extends Activity {
             
         listView.setAdapter(listItemAdapter);  
         
-	    // Define a new Adapter
-	    // First parameter - Context
-	    // Second parameter - Layout for the row
-	    // Third parameter - ID of the TextView to which the data is written
-	    // Forth - the Array of data
-//	    adapter = new ArrayAdapter<String>(MainActivity.this, android.R.layout.simple_list_item_1, android.R.id.text1, cnnListStringArray);
-//
-//	    // Assign adapter to ListView
-//	    listView.setAdapter(adapter); 
-//	    
-//	    // ListView Item Click Listener
 	    listView.setOnItemClickListener(new OnItemClickListener() {
 
 			@Override
@@ -333,7 +322,7 @@ public class MainActivity extends Activity {
 				
 				year = Integer.valueOf(tempSA[1]) - 2000;
 //				month = Integer.valueOf(tempSA[2]);
-				day = String.format("%02d", Integer.valueOf(tempSA[3]) + 1);
+				day = String.format(Locale.US, "%02d", Integer.valueOf(tempSA[3]) + 1);
 				
 				scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
 				videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
@@ -361,7 +350,8 @@ public class MainActivity extends Activity {
     };  
 	
 	public void getCNNSTitle() throws Exception {
-	    String resultS = "";
+	    
+		String resultS = "";
 	    String matchString = "CNN Student News Transcript -";
 	
 	    if (isDebug) {
@@ -382,17 +372,14 @@ public class MainActivity extends Activity {
 	    TagNode root = htmlCleaner.clean(url);
 	
 	    // query XPath
-//	    XPATH_resultS = "//div[@class='cnn_spccovt1cllnk cnn_spccovt1cll2']//h2//a";
-//	    Object[] resultSNode = root.evaluateXPath(XPATH_resultS);
-	    // process data if found any node
-	    
-	    XPATH_resultS = "//div[@class='archive-item story cnn_skn_spccovstrylst']//h2//a";
-	    Object[] resultSNode = root.evaluateXPath(XPATH_resultS);
+	    XPATH = "//div[@class='archive-item story cnn_skn_spccovstrylst']//h2//a";
+	    Object[] resultSNode = root.evaluateXPath(XPATH);
+
 	    // process data if found any node
 	    if(resultSNode.length > 0) {
 	    	
 	    	if (isDebug) {
-	    		Log.e("gray", "MainActivity.java:getCNNSTitle, " + "resultSNode.length > 0, resultSNode.length:" + resultSNode.length);
+	    		Log.e("gray", "MainActivity.java:getCNNSTitle, resultSNode.length:" + resultSNode.length);
 			}
 	    	int arrayIndex = 0;
 	    	for (int i = 0; arrayIndex < MAX_LIST_ARRAY_SIZE; i++) {
@@ -435,6 +422,12 @@ public class MainActivity extends Activity {
 		return videoAddressString;
 	}
 	
+    public void showProcessDialog(CharSequence title, CharSequence message){
+    	
+		mProgressDialog = ProgressDialog.show(MainActivity.this, title, message, true);
+		mProgressDialog.setCancelable(true); 
+    }
+    
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 

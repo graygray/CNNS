@@ -25,6 +25,7 @@ import android.os.Message;
 import android.preference.PreferenceManager;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.DownloadManager;
 import android.app.AlertDialog.Builder;
 import android.app.ProgressDialog;
@@ -52,21 +53,20 @@ import android.widget.VideoView;
 
 public class PlayActivity extends Activity implements OnCompletionListener {
 
-	// HTML page
-	public String cnnScriptPath = "";
-    // XPath query
-	public String XPATH = "";
-    
-    public String cnnScriptContent = "";
-    public String cnnVideoPath = "";
+	public String cnnVideoPath = "";
 	public String cnnVideoName = "";
+	public String cnnScriptPath = "";
+	public String cnnScriptContent = "";
+    
+	public String XPATH = "";					// XPath query
+    
 	public VideoView mVideoView;
-	public ProgressDialog mProgressDialog;
-	
 	public TextView mTextView;
-	public String translatedText = "";
+	public ProgressDialog mProgressDialog;
+	public RelativeLayout.LayoutParams videoviewlp;
 	
-	public static boolean backtwice = false;
+	public CharSequence srcText = "";
+	public String translatedText = "";
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -91,33 +91,59 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: cnnVideoPath.split(\"/\"), arrayLength:" + tempSA.length);
 			for (int i = 0; i < tempSA.length; i++) {
-				Log.e("gray", "PlayActivity.java: cnnVideoPath:" + tempSA[i]);
+				Log.e("gray", "PlayActivity.java: cnnVideoPath.split(\"/\"), " + i + ":" + tempSA[i]);
 			}
 		}
+		cnnVideoName = tempSA[tempSA.length - 1];
 		
 		// check if video file already download, or set path to local dir
-		cnnVideoName = tempSA[tempSA.length - 1];
 		if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName)) {
 			
+			// video already download
 			cnnVideoPath = Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName;
 			playVideo();
 			
 		} else {
+			// video not exist, play from CNNS
 			
 			if (networInfo == null || !networInfo.isAvailable()){
 				
-				Log.e("gray", "PlayActivity.java, NO Available Network!!");
+				if (MainActivity.isDebug) {
+					Log.e("gray", "PlayActivity.java, NO Available Network!!");
+				}
 				AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
 		        dialog.setTitle("Alert Message : video");
 		        dialog.setMessage("No Availiable Network!!");
 		        dialog.show();
 		        
+		        // change layout to avoid blocking all screen
 		        mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
 		        RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, 10);
 		        mVideoView.setLayoutParams(videoviewlp);
 		        mVideoView.invalidate();
 		        
 			} else {
+				
+				// download video
+				// if Enable Download && video file not exist, download it
+				if (MainActivity.isEnableDownload && isDownloadManagerAvailable(getApplicationContext()) ){
+					
+					Log.e("gray", "PlayActivity.java:onCreate, start to download video...");
+					String url = cnnVideoPath;
+					DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+					request.setDescription("to /sdcard/download");
+					request.setTitle(cnnVideoName);
+					// in order for this if to run, you must use the android 3.2 to compile your app
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+						request.allowScanningByMediaScanner();
+						request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+					}
+					request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, cnnVideoName);
+					
+					// get download service and enqueue file
+					DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+					manager.enqueue(request);
+				}
 				
 				playVideo();
 
@@ -131,15 +157,18 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 				cnnScriptContent =  readFileAsString( Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".txt");
 				setResultText(cnnScriptContent);
 			} catch (IOException e) {
-				Log.e("gray", "PlayActivity.java:run, read script file, Exception e:" + e.toString()); 
+				Log.e("gray", "PlayActivity.java:run, read script file error, Exception e:" + e.toString()); 
 				e.printStackTrace();
 			}
 			
 		} else {
+			// script not exist, download from CNNS
 			
 			if (networInfo == null || !networInfo.isAvailable()){
 				
-				Log.e("gray", "PlayActivity.java, NO Available Network!!");
+				if (MainActivity.isDebug) {
+					Log.e("gray", "PlayActivity.java, NO Available Network!!");
+				}
 				AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
 		        dialog.setTitle("Alert Message - script");
 		        dialog.setMessage("No Availiable Network!!");
@@ -147,9 +176,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			
 			} else {
 				
-				final CharSequence strDialogTitle = "Please Wait...";
-				final CharSequence strDialogBody = "Loading Video & Script...";
-				mProgressDialog = ProgressDialog.show(PlayActivity.this, strDialogTitle, strDialogBody, true);
+				showProcessDialog("Please Wait...", "Loading Video & Script...");
 				
 				new Thread(new Runnable() 
 				{ 
@@ -163,11 +190,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 								Log.e("gray", "PlayActivity.java:run, " + cnnScriptContent);
 							}
 						} catch (Exception e) {
-							Log.e("gray", "PlayActivity.java:run, Exception e:" + e.toString());  
-							
-							// gray.lin.trace : catch timeout or other exception
-							handler.sendEmptyMessage(0);
-							
+							Log.e("gray", "PlayActivity.java:run, Exception:" + e.toString());  
 							e.printStackTrace();
 						}
 					} 
@@ -179,48 +202,41 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		
 		mTextView.setOnClickListener(new View.OnClickListener(){
 		    public void onClick(View v){
-		    	Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
-		    	Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
 		    	
 		    	// double click
 		    	if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
-					
-					final CharSequence strDialogTitle = "Please Wait...";
-					final CharSequence strDialogBody = "Translate...";
-					mProgressDialog = ProgressDialog.show(PlayActivity.this, strDialogTitle, strDialogBody, true);
-					
-					new Thread(new Runnable() 
-					{ 
-						@Override
-						public void run() 
+		    		
+		    		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+		    		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
+					if (networInfo == null || !networInfo.isAvailable()){
+						
+						srcText = mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
+						if (MainActivity.isDebug) {
+							Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
+							Log.e("gray", "PlayActivity.java: TextView.onClick : " + srcText);
+						}
+						
+						showProcessDialog("Please Wait...", "Translate...");
+						
+						new Thread(new Runnable() 
 						{ 
-							try {
-								getTranslateString(mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
-								handler.sendEmptyMessage(1);
-								if (MainActivity.isDebug) {
-									Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
+							@Override
+							public void run() 
+							{ 
+								try {
+									getTranslateString(srcText);
+									handler.sendEmptyMessage(1);
+									if (MainActivity.isDebug) {
+										Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
+									}
+								} catch (Exception e) {
+									Log.e("gray", "PlayActivity.java:run, Exception:" + e.toString());  
+									e.printStackTrace();
 								}
-							} catch (Exception e) {
-								Log.e("gray", "PlayActivity.java:run, Exception e:" + e.toString());  
-								
-								// gray.lin.trace : catch timeout or other exception
-								handler.sendEmptyMessage(0);
-								
-								e.printStackTrace();
-							}
-						} 
-					}).start();
-		    		
-//		    		new AlertDialog.Builder(PlayActivity.this).setTitle("title").setIcon( 
-//					android.R.drawable.ic_dialog_info)
-////					.setView( 
-////					new EditText(PlayActivity.this)).setPositiveButton("確定", null) 
-////					.setNegativeButton("取消" , null)
-//					.show();
-		    		
+							} 
+						}).start();
+					}
 				}
-		    	
-		    
 		    }
 		});
 		
@@ -268,33 +284,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 //		    }
 //		});
 
-		if (MainActivity.isDebug) {
-			Log.e("gray", "PlayActivity.java: video file path: "+ Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName);
-		}
-		
-		// if Enable Download &&  video file not exist, download it
-		if (MainActivity.isEnableDownload && isDownloadManagerAvailable(getApplicationContext()) &&
-			!isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName) ){
-			
-			// check network ststus
-			if ( !(networInfo == null || !networInfo.isAvailable()) ) {
-				
-				String url = cnnVideoPath;
-				DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-				request.setDescription("to /sdcard/download");
-				request.setTitle(cnnVideoName);
-				// in order for this if to run, you must use the android 3.2 to compile your app
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-					request.allowScanningByMediaScanner();
-					request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-				}
-				request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, cnnVideoName);
-				
-				// get download service and enqueue file
-				DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-				manager.enqueue(request);
-			}
-		}
 		
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: END =================");
@@ -330,15 +319,24 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		// mVideoView.requestFocus();
 		// start play
 		mVideoView.start();
+		
 	}
 	
 	public void getTranslateString(CharSequence srcString) throws Exception {
 
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java:getTranslateString, " + "");
+		}
 		translatedText = "";
-		String queryURL = "http://tw.dictionary.search.yahoo.com/search?p=stud&fr2=dict";
-//		String queryURL = "http://tw.dictionary.search.yahoo.com/search?p=";
-//		queryURL = queryURL + srcString + "&fr2=dict";
-//		String queryString = "";
+		
+		// simplified chinese
+//		String queryURL = "http://www.iciba.com/";
+//		queryURL += srcString;
+//		XPATH = "//span[@class='label_list']/label";
+		
+		String queryURL = "http://translate.reference.com/translate?query=";
+		queryURL = queryURL + srcString + "&src=en&dst=zh-TW";
+		XPATH = "//div[@class='definition']";
 		
 		if (MainActivity.isDebug) {
 			Log.e("gray", "MainActivity.java:getTranslateString, queryURL:" + queryURL);
@@ -359,8 +357,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	    // get HTML page root node
 	    root = htmlCleaner.clean(url);
 	
-	    XPATH = "//span[@class='proun_type']";
-//	    XPATH = "//p[@class='explanation']";
 	    Object[] statsNode = root.evaluateXPath(XPATH);
 	    // process data if found any node
 	    if(statsNode.length > 0) {
@@ -373,32 +369,12 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 				
 	    		TagNode resultNode = (TagNode)statsNode[i];
 	    		// get text data from HTML node
-	    		translatedText += resultNode.getText().toString() + "  \n";
+	    		translatedText += resultNode.getText().toString() + "\n";
 			}
 	        
 	    } else {
 			Log.e("gray", "PlayActivity.java: " + "statsNode.length < 0");
 		}
-	    
-//	    XPATH = "//p[@class='cnnBodyText']";
-//	    statsNode = root.evaluateXPath(XPATH);
-//	    // process data if found any node
-//	    if(statsNode.length > 0) {
-//
-//	    	if (MainActivity.isDebug) {
-//	    		Log.e("gray", "MainActivity.java:getScriptContent, statsNode.length:" + statsNode.length);
-//			}
-//	    	
-//	    	for (int i = 0; i < statsNode.length; i++) {
-//				
-//	    		TagNode resultNode = (TagNode)statsNode[i];
-//	    		// get text data from HTML node
-//	    		cnnScriptContent += resultNode.getText().toString() + "\n\n";
-//			}
-//	        
-//	    } else {
-//			Log.e("gray", "PlayActivity.java: " + "statsNode.length < 0");
-//		}
 	}
 	
 	Handler handler = new Handler() {  
@@ -425,20 +401,21 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			case 1:
 				
 				Log.e("gray", "PlayActivity.java: translatedText:" + translatedText);
-//				new AlertDialog.Builder(PlayActivity.this).setTitle("title").setIcon( 
-//						android.R.drawable.ic_dialog_info)
-////						.setView( 
-////						new EditText(PlayActivity.this)).setPositiveButton("確定", null) 
-////						.setNegativeButton("取消" , null)
-//						.show();
-//				break;
+				new AlertDialog.Builder(PlayActivity.this).setTitle(srcText).setIcon( 
+						android.R.drawable.ic_dialog_info).setMessage(translatedText)
+						.show();
+				break;
 			}
-        	
-				
             
 		    mProgressDialog.dismiss();
         }  
     };  
+    
+    public void showProcessDialog(CharSequence title, CharSequence message){
+    	
+		mProgressDialog = ProgressDialog.show(PlayActivity.this, title, message, true);
+		mProgressDialog.setCancelable(true); 
+    }
     
 	public void getScriptContent() throws Exception {
 		
@@ -559,6 +536,16 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	    }
 	}
 	
+//	@Override
+//	public boolean onKeyDown(int keyCode, KeyEvent event) {
+//		Log.e("gray", "PlayActivity.java:onKeyDown, " + "");
+//	    if (keyCode == KeyEvent.KEYCODE_BACK) {
+//	    	Log.e("gray", "PlayActivity.java:onKeyDown, " + "KeyEvent.KEYCODE_BACK");
+//	        return true;
+//	    }
+//	    return super.onKeyDown(keyCode, event);
+//	}
+	
 	// do't show settings at this page
 //	@Override
 //	public boolean onCreateOptionsMenu(Menu menu) {
@@ -566,4 +553,5 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 //		getMenuInflater().inflate(R.menu.play, menu);
 //		return true;
 //	}
+	
 }
