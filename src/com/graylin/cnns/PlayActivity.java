@@ -73,10 +73,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_play);
 		
-		// network status
-		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
-		
 		cnnVideoPath = MainActivity.getVideoAddress();
 		cnnScriptPath = MainActivity.getScriptAddress();
 		if (MainActivity.isDebug) {
@@ -106,23 +102,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		} else {
 			// video not exist, play from CNNS
 			
-			if (networInfo == null || !networInfo.isAvailable()){
-				
-				if (MainActivity.isDebug) {
-					Log.e("gray", "PlayActivity.java, NO Available Network!!");
-				}
-				AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
-		        dialog.setTitle("Alert Message : video");
-		        dialog.setMessage("No Availiable Network!!");
-		        dialog.show();
-		        
-		        // change layout to avoid blocking all screen
-		        mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
-		        RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, 10);
-		        mVideoView.setLayoutParams(videoviewlp);
-		        mVideoView.invalidate();
-		        
-			} else {
+			if (isNetworkAvailable()){
 				
 				// download video
 				// if Enable Download && video file not exist, download it
@@ -146,7 +126,20 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 				}
 				
 				playVideo();
-
+		        
+			} else {
+				
+				if (MainActivity.isDebug) {
+					Log.e("gray", "PlayActivity.java, NO Available Network!!");
+				}
+				
+				showAlertDialog("Alert Message : video", "No Availiable Network!!");
+				
+		        // change layout to avoid blocking all screen
+		        mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
+		        RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, 10);
+		        mVideoView.setLayoutParams(videoviewlp);
+		        mVideoView.invalidate();
 			}
 		}
 		
@@ -164,17 +157,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		} else {
 			// script not exist, download from CNNS
 			
-			if (networInfo == null || !networInfo.isAvailable()){
-				
-				if (MainActivity.isDebug) {
-					Log.e("gray", "PlayActivity.java, NO Available Network!!");
-				}
-				AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
-		        dialog.setTitle("Alert Message - script");
-		        dialog.setMessage("No Availiable Network!!");
-		        dialog.show();
-			
-			} else {
+			if (isNetworkAvailable()){
 				
 				showProcessDialog("Please Wait...", "Loading Video & Script...");
 				
@@ -195,6 +178,13 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 						}
 					} 
 				}).start();
+			
+			} else {
+				
+				if (MainActivity.isDebug) {
+					Log.e("gray", "PlayActivity.java, NO Available Network!!");
+				}
+				showAlertDialog("Alert Message - script", "No Availiable Network!!");
 			}
 		}
 		
@@ -206,9 +196,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		    	// double click
 		    	if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
 		    		
-		    		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-		    		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
-					if (networInfo == null || !networInfo.isAvailable()){
+					if (isNetworkAvailable()){
 						
 						srcText = mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
 						if (MainActivity.isDebug) {
@@ -235,6 +223,10 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 								}
 							} 
 						}).start();
+				        
+					} else {
+						
+						showAlertDialog("Alert Message - translate", "No Availiable Network!!");
 					}
 				}
 		    }
@@ -514,6 +506,23 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: onCompletion");
 		}
+	}
+	
+	public boolean isNetworkAvailable() {
+		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
+		if (networInfo == null || !networInfo.isAvailable()){
+			return false;
+		} else {
+			return true;
+		}
+	}
+	
+	public void showAlertDialog(String title, String message) {
+		AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
+        dialog.setTitle(title);
+        dialog.setMessage(message);
+        dialog.show();
 	}
 	
 	/**
