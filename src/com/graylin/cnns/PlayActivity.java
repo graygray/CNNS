@@ -327,8 +327,19 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 //		XPATH = "//span[@class='label_list']/label";
 		
 		String queryURL = "http://translate.reference.com/translate?query=";
-		queryURL = queryURL + srcString + "&src=en&dst=zh-TW";
-		XPATH = "//div[@class='definition']";
+		queryURL = queryURL + srcString + "&src=en&dst=" + MainActivity.translateLanguage;
+		
+		if (MainActivity.translateLanguage.equalsIgnoreCase("tl") ||
+			MainActivity.translateLanguage.equalsIgnoreCase("ms") ||
+			MainActivity.translateLanguage.equalsIgnoreCase("id") ||
+			MainActivity.translateLanguage.equalsIgnoreCase("th") ||
+			MainActivity.translateLanguage.equalsIgnoreCase("vi")	) {
+			XPATH = "//div[@class='translateTxt']";
+		} else if (MainActivity.translateLanguage.equalsIgnoreCase("es")) {
+			XPATH = "//div[@id='tabr1']";
+		} else {
+			XPATH = "//div[@class='definition']";
+		}
 		
 		if (MainActivity.isDebug) {
 			Log.e("gray", "MainActivity.java:getTranslateString, queryURL:" + queryURL);

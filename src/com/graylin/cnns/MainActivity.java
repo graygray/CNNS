@@ -57,7 +57,8 @@ public class MainActivity extends Activity {
 //	public static boolean isDebug = false;
 	public static boolean isDebug = true;
 
-	public static boolean isLoadedToday = false;
+	public static boolean isNeedUpdate = false;
+	public static boolean isEverLoaded = false;
 
 	public static final int MAX_LIST_ARRAY_SIZE = 20;
 	public static String[] cnnListStringArray = new String [MAX_LIST_ARRAY_SIZE];
@@ -90,6 +91,7 @@ public class MainActivity extends Activity {
 	// settings variable
 	public static boolean isEnableDownload;
 	public static int textSize;
+	public static String translateLanguage;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -119,8 +121,9 @@ public class MainActivity extends Activity {
         if (textSize > 50){
         	textSize = 50;
         }
+        translateLanguage = sharedPrefs.getString("pref_translat_language", "zh-TW");
 		
-		// check if need to update, set isLoadedToday = true / false
+		// check if need to update, set isNeedUpdate = true / false
 		// get current date 
 		SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd-KK", Locale.US);
 		String currentDate = s.format(new Date());
@@ -129,33 +132,52 @@ public class MainActivity extends Activity {
 		String lastUpdateDate = sharedPrefs.getString("lastUpdateDate", "");
 
 		if (currentDate.equalsIgnoreCase(lastUpdateDate)) {
-			isLoadedToday = true;
+			isNeedUpdate = false;
 		} else {
-			isLoadedToday = false;
+			isNeedUpdate = true;
 			sharedPrefsEditor.putString("lastUpdateDate", currentDate);
 		}
 		if (isDebug) {
 			Log.e("gray", "MainActivity.java: currentDate: " + currentDate);
 			Log.e("gray", "MainActivity.java: lastUpdateDate: " + lastUpdateDate);
-			Log.e("gray", "MainActivity.java: isLoadedToday: " + isLoadedToday);
-//			isLoadedToday = false;
+			Log.e("gray", "MainActivity.java: isNeedUpdate: " + isNeedUpdate);
+//			isNeedUpdate = false;
 		}
 		
-		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
-		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
-		
-		// loaded earlier or no available network, get stored data
-		if (isLoadedToday || networInfo == null || !networInfo.isAvailable()) {	
+		// check if need update (every hour check right now)
+		if (isNeedUpdate) {	
 			
-			if (networInfo == null || !networInfo.isAvailable()){
-				if (isDebug) {
-					Log.e("gray", "MainActivity.java, NO CONNECTIVITY_SERVICE");
+			if (isNetworkAvailable()) {
+				
+				showProcessDialog("Please Wait...", "Getting Data From CNN Student News...");
+				
+				new Thread(new Runnable() 
+				{ 
+					@Override
+					public void run() 
+					{ 
+						try {
+							getCNNSTitle();
+							handler.sendEmptyMessage(0);
+						} catch (Exception e) {
+							Log.e("gray", "MainActivity.java:run, Exception:" + e.toString());
+							e.printStackTrace();
+						}
+					} 
+				}).start();
+				
+			} else {
+				
+				if (lastUpdateDate.equalsIgnoreCase("")) {
+					//never have cnns data
+					showAlertDialog("Error", "Never get data from CNN student news!");
+				} else {
+					showListView();
 				}
-				AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
-		        dialog.setTitle("Alert Message");
-		        dialog.setMessage("No Availiable Network!!");
-		        dialog.show();
 			}
+			
+		// no need to update, imply cnns data ever loaded
+		} else {		
 			
 			for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
 				cnnListStringArray[i] = sharedPrefs.getString("cnnListString_"+i, "");
@@ -166,28 +188,7 @@ public class MainActivity extends Activity {
 					Log.e("gray", "MainActivity.java: cnnScriptAddrStringArray[i]:" + cnnScriptAddrStringArray[i]);
 				}
 			}
-			
 			showListView();
-			
-		// never loaded, get data from network
-		} else {				
-				
-			showProcessDialog("Please Wait...", "Getting Data From CNN Student News...");
-			
-			new Thread(new Runnable() 
-			{ 
-				@Override
-				public void run() 
-				{ 
-					try {
-						getCNNSTitle();
-						handler.sendEmptyMessage(0);
-					} catch (Exception e) {
-						Log.e("gray", "MainActivity.java:run, Exception:" + e.toString());
-						e.printStackTrace();
-					}
-				} 
-			}).start();
 		}
 		
 //		Button btn_go = (Button) findViewById(R.id.button_test);
@@ -218,21 +219,25 @@ public class MainActivity extends Activity {
 		
         switch (requestCode) {
 		case 0:
-			// back from settings page, get settings data
+			// back from settings page, set settings value to variable
 			if (isDebug) {
 				Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getBoolean("pref_download", false) );
-				Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getString("pref_textSize", "") );
+				Log.e("gray", "PlayActivity.java: pref_textSize :" + sharedPrefs.getString("pref_textSize", "18") );
+				Log.e("gray", "PlayActivity.java: pref_translat_language :" + sharedPrefs.getString("pref_translat_language", "zh-TW") );
 			}
 			
 			isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
 			
-			textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", ""));
+			textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", "18"));
 			if (textSize < 8) {
 				textSize = 8;
 			}
 			if (textSize > 50){
 				textSize = 50;
 			}
+			
+			translateLanguage = sharedPrefs.getString("pref_translat_language", "zh-TW");
+					
 			break;
 			
 		case 1:
@@ -427,6 +432,23 @@ public class MainActivity extends Activity {
 		mProgressDialog = ProgressDialog.show(MainActivity.this, title, message, true);
 		mProgressDialog.setCancelable(true); 
     }
+    
+	public boolean isNetworkAvailable() {
+		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+		NetworkInfo networInfo = conManager.getActiveNetworkInfo();
+		if (networInfo == null || !networInfo.isAvailable()){
+			return false;
+		} else {
+			return true;
+		}
+	}
+	
+	public void showAlertDialog(String title, String message) {
+		AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+        dialog.setTitle(title);
+        dialog.setMessage(message);
+        dialog.show();
+	}
     
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {

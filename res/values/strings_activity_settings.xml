@@ -17,6 +17,7 @@
     <string name="pref_title_setTextSize">Set Script Text Size (8 ~ 50)</string>
     <string name="pref_description_setTextSize">Set Script Text Size</string>
     <string name="pref_default_TextSize">18</string>
+    <string name="pref_title_set_translate_language">Choose quick translate language</string>
     
     <string-array name="pref_example_list_titles">
         <item>Always</item>
@@ -27,6 +28,45 @@
         <item>1</item>
         <item>0</item>
         <item>-1</item>
+    </string-array>
+    
+    <string-array name="pref_translate_language">
+        <item>Chinese (tranditional)</item>
+        <item>Chinese (simplified)</item>
+        <item>Korean</item>
+        <item>Japanese</item>
+        <!--   
+        <item>Vietnamese</item>
+        -->
+        <item>Thai</item>
+        <item>Indonesian</item>
+        <item>Malay</item>
+        <item>Filipino</item>
+        <item>Arabic</item>
+        <item>Russian</item>
+        <item>German</item>
+        <item>French</item>
+        <item>Spanish</item>
+        <item>Italian</item>
+    </string-array>
+    <string-array name="pref_translate_language_values">
+        <item>zh-TW</item>
+        <item>zh-CN</item>
+        <item>ko</item>
+        <item>ja</item>
+        <!--
+        <item>vi</item>
+        -->
+        <item>th</item>
+        <item>id</item>
+        <item>ms</item>
+        <item>tl</item>
+        <item>ar</item>
+        <item>ru</item>
+        <item>de</item>
+        <item>fr</item>
+        <item>es</item>
+        <item>it</item>
     </string-array>
 
     <!-- Example settings for Data & Sync -->

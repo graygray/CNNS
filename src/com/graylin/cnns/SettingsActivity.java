@@ -79,7 +79,7 @@ public class SettingsActivity extends PreferenceActivity {
 		// their values. When their values change, their summaries are updated
 		// to reflect the new value, per the Android Design guidelines.
 		bindPreferenceSummaryToValue(findPreference("pref_textSize"));
-//		bindPreferenceSummaryToValue(findPreference("example_list"));
+		bindPreferenceSummaryToValue(findPreference("pref_translat_language"));
 //		bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
 //		bindPreferenceSummaryToValue(findPreference("sync_frequency"));
 	}
@@ -128,12 +128,20 @@ public class SettingsActivity extends PreferenceActivity {
 		@Override
 		public boolean onPreferenceChange(Preference preference, Object value) {
 			String stringValue = value.toString();
+			
+			if (MainActivity.isDebug) {
+				Log.e("gray", "SettingsActivity.java: onPreferenceChange, stringValue:" + stringValue);
+			}
 
 			if (preference instanceof ListPreference) {
 				// For list preferences, look up the correct display value in
 				// the preference's 'entries' list.
 				ListPreference listPreference = (ListPreference) preference;
 				int index = listPreference.findIndexOfValue(stringValue);
+				
+				if (MainActivity.isDebug) {
+					Log.e("gray", "SettingsActivity.java: onPreferenceChange, index:" + index);
+				}
 
 				// Set the summary to reflect the new value.
 				preference
@@ -211,7 +219,7 @@ public class SettingsActivity extends PreferenceActivity {
 			// updated to reflect the new value, per the Android Design
 			// guidelines.
 			bindPreferenceSummaryToValue(findPreference("pref_textSize"));
-//			bindPreferenceSummaryToValue(findPreference("example_list"));
+			bindPreferenceSummaryToValue(findPreference("pref_translat_language"));
 		}
 	}
 
