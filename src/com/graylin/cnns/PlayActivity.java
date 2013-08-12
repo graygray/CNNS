@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import org.htmlcleaner.CleanerProperties;
@@ -22,16 +21,12 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.DownloadManager;
-import android.app.AlertDialog.Builder;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.util.DisplayMetrics;
@@ -39,16 +34,13 @@ import android.util.Log;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 import android.widget.VideoView;
 
 public class PlayActivity extends Activity implements OnCompletionListener {
@@ -67,6 +59,10 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	
 	public CharSequence srcText = "";
 	public String translatedText = "";
+	
+	// video variables
+	public boolean isVideoPlaying;
+	public int stopPosition;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -312,6 +308,19 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		// start play
 		mVideoView.start();
 		
+		mVideoView.setOnTouchListener(new OnTouchListener() {
+			public boolean onTouch(View v, MotionEvent event) {
+				Log.e("gray", "PlayActivity.java: onTouch");
+
+				if (mVideoView.isPlaying()) {
+					mVideoView.pause();
+				} else {
+					mVideoView.start();
+				}
+				return false;
+			}
+		});
+		
 	}
 	
 	public void getTranslateString(CharSequence srcString) throws Exception {
@@ -403,7 +412,9 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 
 			case 1:
 				
-				Log.e("gray", "PlayActivity.java: translatedText:" + translatedText);
+				if (MainActivity.isDebug) {
+					Log.e("gray", "PlayActivity.java: translatedText:" + translatedText);
+				}
 				new AlertDialog.Builder(PlayActivity.this).setTitle(srcText).setIcon( 
 						android.R.drawable.ic_dialog_info).setMessage(translatedText)
 						.show();
@@ -556,15 +567,57 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	    }
 	}
 	
+	protected void onPause() {
+        super.onPause();
+
+        if (MainActivity.isDebug) {
+        	Log.e("gray", "PlayActivity.java: onPause ");
+		}
+        stopPosition = mVideoView.getCurrentPosition(); //stopPosition is an int
+        isVideoPlaying = mVideoView.isPlaying();
+        mVideoView.pause();
+	}
+	
+	protected void onResume() {
+		super.onResume();
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java: onResume ");
+		}
+		mVideoView.seekTo(stopPosition);
+
+		if (isVideoPlaying) {
+			mVideoView.start();
+		} else {
+			mVideoView.resume();
+		}
+	}
+	
 //	@Override
-//	public boolean onKeyDown(int keyCode, KeyEvent event) {
-//		Log.e("gray", "PlayActivity.java:onKeyDown, " + "");
-//	    if (keyCode == KeyEvent.KEYCODE_BACK) {
-//	    	Log.e("gray", "PlayActivity.java:onKeyDown, " + "KeyEvent.KEYCODE_BACK");
-//	        return true;
-//	    }
-//	    return super.onKeyDown(keyCode, event);
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//		
+//		if (MainActivity.isDebug) {
+//			Log.e("gray", "PlayActivity.java:onOptionsItemSelected, " + "");
+//		}
+//		
+//		return true;
 //	}
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		Log.e("gray", "PlayActivity.java:onKeyDown, " + "");
+	    if (keyCode == KeyEvent.KEYCODE_MENU) {
+	    	Log.e("gray", "PlayActivity.java:onKeyDown, " + "KeyEvent.KEYCODE_MENU");
+	    	
+	    	if (mVideoView.isPlaying()) {
+				mVideoView.pause();
+			} else {
+				mVideoView.start();
+			}
+	    	
+	        return true;
+	    }
+	    return super.onKeyDown(keyCode, event);
+	}
 	
 	// do't show settings at this page
 //	@Override

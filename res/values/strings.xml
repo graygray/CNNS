@@ -6,5 +6,6 @@
     <string name="hello_world">Hello world!</string>
     <string name="title_activity_play">Video &amp; Script</string>
     <string name="action_info">Information</string>
+    <string name="action_qa">Q &amp; A</string>
 
 </resources>

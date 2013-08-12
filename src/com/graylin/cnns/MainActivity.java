@@ -6,7 +6,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 
 import org.htmlcleaner.CleanerProperties;
@@ -16,41 +15,29 @@ import org.htmlcleaner.TagNode;
 import com.google.ads.AdRequest;
 import com.google.ads.AdSize;
 import com.google.ads.AdView;
-import com.google.ads.z;
   
 import android.app.Activity;  
 import android.app.AlertDialog;
-import android.app.DownloadManager;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;	
-import android.content.pm.ResolveInfo;
-import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;  
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.Display;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;  
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;  
 import android.widget.SimpleAdapter;
-import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	 
@@ -102,11 +89,7 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: START ===============");
 		}
 		
-		// load AD
-		adView = new AdView(this, AdSize.SMART_BANNER, "a151e4fa6d7cf0e");
-		LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
-		layout.addView(adView);
-		adView.loadAd(new AdRequest());
+		
 		
 		// get SharedPreferences instance
 		sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -200,6 +183,12 @@ public class MainActivity extends Activity {
 //			}
 //		});
 
+		// load AD
+		adView = new AdView(this, AdSize.SMART_BANNER, "a151e4fa6d7cf0e");
+		LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
+		layout.addView(adView);
+		adView.loadAd(new AdRequest());
+				
          if (isDebug) {
 			Log.e("gray", "MainActivity.java: END =================");
 		}
@@ -469,13 +458,43 @@ public class MainActivity extends Activity {
         switch (item.getItemId()) {
  
         case R.id.action_settings:
+        	if (isDebug) {
+        		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_settings");
+        	}
             Intent i = new Intent(this, SettingsActivity.class);
             startActivityForResult(i, 0);
             break;
             
         case R.id.action_info:
-        	Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
-
+        	if (isDebug) {
+        		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
+        	}
+        	showAlertDialog("Information", 
+        			"Usage:\n\n" +
+        			"1. Quick translate:\n" +
+        			"by double click, need network support.\n\n" +
+        			"2. Script & video download status:\n" +
+        			"If files be downloaded at \"/sdcard/download\", the icon will be different obviously.\n" +
+        			"Script will be downloaded automatically and the video download need to be enabled at settings page.\n\n" +
+        			"3. Long press to copy script.\n\n" +
+        			"4. Click on video or click \"menu\" key to suspend / resume video \n\n" +
+        			""
+        			);
+            break;
+            
+        case R.id.action_qa:
+        	if (isDebug) {
+        		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_qa");
+        	}
+        	showAlertDialog("Q & A", 
+        			"1. No update for a long time?\n" +
+        			"It's depend on CNN Student News..\n" +
+        			"The show is suspended when student is on vacation.\n\n" +
+        			"Take a look at CNN Student News:\n" +
+        			"http://edition.cnn.com/studentnews/\n" +
+        			"and it's archive:\n" +
+        			"http://edition.cnn.com/US/studentnews/quick.guide/archive/\n\n"
+        			);
             break;
         }
  
