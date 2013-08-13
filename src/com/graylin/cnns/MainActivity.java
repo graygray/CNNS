@@ -41,8 +41,8 @@ import android.widget.SimpleAdapter;
 
 public class MainActivity extends Activity {
 	 
-//	public static boolean isDebug = false;
-	public static boolean isDebug = true;
+	public static boolean isDebug = false;
+//	public static boolean isDebug = true;
 
 	public static boolean isNeedUpdate = false;
 	public static boolean isEverLoaded = false;
@@ -89,8 +89,6 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: START ===============");
 		}
 		
-		
-		
 		// get SharedPreferences instance
 		sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 		sharedPrefsEditor = sharedPrefs.edit();  
@@ -124,7 +122,7 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: currentDate: " + currentDate);
 			Log.e("gray", "MainActivity.java: lastUpdateDate: " + lastUpdateDate);
 			Log.e("gray", "MainActivity.java: isNeedUpdate: " + isNeedUpdate);
-//			isNeedUpdate = false;
+//			isNeedUpdate = true;
 		}
 		
 		// check if need update (every hour check right now)
@@ -346,7 +344,8 @@ public class MainActivity extends Activity {
 	public void getCNNSTitle() throws Exception {
 	    
 		String resultS = "";
-	    String matchString = "CNN Student News Transcript -";
+		String matchString = "CNN Student News -";
+	    String matchString2 = "CNN Student News Transcript -";
 	
 	    if (isDebug) {
 	    	Log.e("gray", "MainActivity.java:getCNNSTitle, " + "");
@@ -366,8 +365,48 @@ public class MainActivity extends Activity {
 	    TagNode root = htmlCleaner.clean(url);
 	
 	    // query XPath
-	    XPATH = "//div[@class='archive-item story cnn_skn_spccovstrylst']//h2//a";
+	    XPATH = "//div[@class='cnn_spccovt1cllnk cnn_spccovt1cll2']//h2//a";
 	    Object[] resultSNode = root.evaluateXPath(XPATH);
+
+	    int arrayIndex = 0;
+	    // process data if found any node
+//	    if(resultSNode.length > 0) {
+//	    	
+//	    	if (isDebug) {
+//	    		Log.e("gray", "MainActivity.java:getCNNSTitle, resultSNode.length:" + resultSNode.length);
+//			}
+//	    	for (int i = 0; i < resultSNode.length; i++) {
+//				
+//	    		TagNode resultNode = (TagNode)resultSNode[i];
+//	    		resultS = resultNode.getText().toString();
+//	    		
+//	    		if (resultS.regionMatches(0, matchString, 0, matchString.length())) {
+//					
+//	    			resultS = resultS.replace("CNN Student News -", "");
+//	    			cnnListStringArray[arrayIndex] = resultS;
+//	    			cnnScriptAddrStringArray[arrayIndex] = resultNode.getAttributeByName("href");
+//	    			
+//	    			sharedPrefsEditor.putString("cnnListString_"+arrayIndex, cnnListStringArray[arrayIndex]);
+//	    			sharedPrefsEditor.putString("cnnScriptAddrString_"+arrayIndex, cnnScriptAddrStringArray[arrayIndex]);
+//	    			if (isDebug) {
+//	    				Log.e("gray", "MainActivity.java:getCNNSTitle, i:" + (i) + ", arrayIndex:" + arrayIndex + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+//					}
+//	    			
+//	    			arrayIndex++;
+//				} else {
+//					if (isDebug) {
+//						Log.e("gray", "MainActivity.java: string not match!!" );
+//					}
+//				}
+//	    	}
+//	    	
+//	    } else {
+//	    	Log.e("gray", "resultSNode.length <= 0, err!!");
+//		}
+	    
+	    // query XPath
+	    XPATH = "//div[@class='archive-item story cnn_skn_spccovstrylst']//h2//a";
+	    resultSNode = root.evaluateXPath(XPATH);
 
 	    // process data if found any node
 	    if(resultSNode.length > 0) {
@@ -375,13 +414,12 @@ public class MainActivity extends Activity {
 	    	if (isDebug) {
 	    		Log.e("gray", "MainActivity.java:getCNNSTitle, resultSNode.length:" + resultSNode.length);
 			}
-	    	int arrayIndex = 0;
 	    	for (int i = 0; arrayIndex < MAX_LIST_ARRAY_SIZE; i++) {
 				
 	    		TagNode resultNode = (TagNode)resultSNode[i];
 	    		resultS = resultNode.getText().toString();
 	    		
-	    		if (resultS.regionMatches(0, matchString, 0, matchString.length())) {
+	    		if (resultS.regionMatches(0, matchString2, 0, matchString2.length())) {
 					
 	    			resultS = resultS.replace("CNN Student News Transcript -", "");
 	    			cnnListStringArray[arrayIndex] = resultS;

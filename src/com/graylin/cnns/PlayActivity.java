@@ -310,7 +310,9 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		
 		mVideoView.setOnTouchListener(new OnTouchListener() {
 			public boolean onTouch(View v, MotionEvent event) {
-				Log.e("gray", "PlayActivity.java: onTouch");
+				if (MainActivity.isDebug) {
+					Log.e("gray", "PlayActivity.java: onTouch");
+				}
 
 				if (mVideoView.isPlaying()) {
 					mVideoView.pause();
@@ -604,9 +606,14 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		Log.e("gray", "PlayActivity.java:onKeyDown, " + "");
+		
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java:onKeyDown, " + "");
+		}
 	    if (keyCode == KeyEvent.KEYCODE_MENU) {
-	    	Log.e("gray", "PlayActivity.java:onKeyDown, " + "KeyEvent.KEYCODE_MENU");
+	    	if (MainActivity.isDebug) {
+	    		Log.e("gray", "PlayActivity.java:onKeyDown, " + "KeyEvent.KEYCODE_MENU");
+			}
 	    	
 	    	if (mVideoView.isPlaying()) {
 				mVideoView.pause();
