@@ -31,10 +31,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.KeyEvent;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -50,7 +47,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 	public String cnnScriptPath = "";
 	public String cnnScriptContent = "";
     
-	public String XPATH = "";					// XPath query
+	public String XPATH = "";
     
 	public VideoView mVideoView;
 	public TextView mTextView;
@@ -104,7 +101,9 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 				// if Enable Download && video file not exist, download it
 				if (MainActivity.isEnableDownload && isDownloadManagerAvailable(getApplicationContext()) ){
 					
-					Log.e("gray", "PlayActivity.java:onCreate, start to download video...");
+					if (MainActivity.isDebug) {
+						Log.e("gray", "PlayActivity.java:onCreate, start to download video...");
+					}
 					String url = cnnVideoPath;
 					DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
 					request.setDescription("to /sdcard/download");
@@ -189,7 +188,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		mTextView.setOnClickListener(new View.OnClickListener(){
 		    public void onClick(View v){
 		    	
-		    	// double click
+		    	// double click, translate function
 		    	if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
 		    		
 					if (isNetworkAvailable()){
@@ -221,23 +220,22 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 						}).start();
 				        
 					} else {
-						
 						showAlertDialog("Alert Message - translate", "No Availiable Network!!");
 					}
 				}
 		    }
 		});
 		
-		mTextView.setOnLongClickListener(new View.OnLongClickListener() {
-			
-			@Override
-			public boolean onLongClick(View v) {
-				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
-				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
-				
-				return false;
-			}
-		});
+//		mTextView.setOnLongClickListener(new View.OnLongClickListener() {
+//			
+//			@Override
+//			public boolean onLongClick(View v) {
+//				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
+//				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
+//				
+//				return false;
+//			}
+//		});
 		
 		// dialog
 //		new AlertDialog.Builder(this).setTitle("½Ð¿é¤J").setIcon( 
@@ -272,7 +270,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 //		    }
 //		});
 
-		
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: END =================");
 		}
@@ -331,11 +328,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			Log.e("gray", "PlayActivity.java:getTranslateString, " + "");
 		}
 		translatedText = "";
-		
-		// simplified chinese
-//		String queryURL = "http://www.iciba.com/";
-//		queryURL += srcString;
-//		XPATH = "//span[@class='label_list']/label";
 		
 		String queryURL = "http://translate.reference.com/translate?query=";
 		queryURL = queryURL + srcString + "&src=en&dst=" + MainActivity.translateLanguage;
