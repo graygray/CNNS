@@ -13,6 +13,7 @@ import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnPreparedListener;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -40,7 +41,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.VideoView;
 
-public class PlayActivity extends Activity implements OnCompletionListener {
+public class PlayActivity extends Activity implements OnCompletionListener, OnPreparedListener{
 
 	public String cnnVideoPath = "";
 	public String cnnVideoName = "";
@@ -66,6 +67,15 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_play);
 		
+		mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
+		mVideoView.setOnCompletionListener(this);
+		mVideoView.setOnPreparedListener(this);
+		
+		// change layout to avoid blocking all screen
+        RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, 10);
+        mVideoView.setLayoutParams(videoviewlp);
+        mVideoView.invalidate();
+        
 		cnnVideoPath = MainActivity.getVideoAddress();
 		cnnScriptPath = MainActivity.getScriptAddress();
 		if (MainActivity.isDebug) {
@@ -130,11 +140,6 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 				
 				showAlertDialog("Alert Message : video", "No Availiable Network!!");
 				
-		        // change layout to avoid blocking all screen
-		        mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
-		        RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, 10);
-		        mVideoView.setLayoutParams(videoviewlp);
-		        mVideoView.invalidate();
 			}
 		}
 		
@@ -154,7 +159,7 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			
 			if (isNetworkAvailable()){
 				
-				showProcessDialog("Please Wait...", "Loading Video & Script...");
+				showProcessDialog("Please Wait...", "Loading Script...");
 				
 				new Thread(new Runnable() 
 				{ 
@@ -286,12 +291,8 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 
 	public void playVideo(){
 		
-		mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
-		mVideoView.setOnCompletionListener(this);
-		DisplayMetrics dm = new DisplayMetrics();
-		this.getWindowManager().getDefaultDisplay().getMetrics(dm);
-		// MyVideoView.WIDTH=dm.widthPixels;
-		// MyVideoView.HEIGHT=dm.heightPixels;
+		showProcessDialog("Please wait", "Loading video...");
+        
 		/*
 		 * Alternatively,for streaming media you can use
 		 * mVideoView.setVideoURI(Uri.parse(URLstring));
@@ -523,6 +524,20 @@ public class PlayActivity extends Activity implements OnCompletionListener {
 			Log.e("gray", "PlayActivity.java: onCompletion");
 		}
 	}
+	
+	@Override
+    public void onPrepared(MediaPlayer mp) {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java: onPrepared");
+		}
+		
+		// change layout to WRAP_CONTENT
+        RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        mVideoView.setLayoutParams(videoviewlp);
+        mVideoView.invalidate();
+        
+        mProgressDialog.dismiss();
+    }
 	
 	public boolean isNetworkAvailable() {
 		ConnectivityManager conManager = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);

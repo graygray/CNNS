@@ -41,8 +41,8 @@ import android.widget.SimpleAdapter;
 
 public class MainActivity extends Activity {
 	 
-	public static boolean isDebug = false;
-//	public static boolean isDebug = true;
+//	public static boolean isDebug = false;
+	public static boolean isDebug = true;
 
 	public static boolean isNeedUpdate = false;
 	public static boolean isEverLoaded = false;
@@ -337,6 +337,7 @@ public class MainActivity extends Activity {
         public void handleMessage(Message msg) {
         	
         	showListView();
+        	mProgressDialog.dismiss();
 		    mProgressDialog.dismiss();
         }  
     };  
