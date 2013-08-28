@@ -8,6 +8,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.DialogPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
@@ -16,6 +17,7 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.text.TextUtils;
+import android.util.AttributeSet;
 import android.util.Log;
 
 import java.util.List;
@@ -43,6 +45,10 @@ public class SettingsActivity extends PreferenceActivity {
 	@Override
 	protected void onPostCreate(Bundle savedInstanceState) {
 		super.onPostCreate(savedInstanceState);
+		
+		if (MainActivity.isDebug) {
+			Log.e("gray", "SettingsActivity.java:onPostCreate");
+		}
 
 		setupSimplePreferencesScreen();
 	}
@@ -53,6 +59,10 @@ public class SettingsActivity extends PreferenceActivity {
 	 * shown.
 	 */
 	private void setupSimplePreferencesScreen() {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "SettingsActivity.java:setupSimplePreferencesScreen");
+		}
+		
 		if (!isSimplePreferences(this)) {
 			return;
 		}
@@ -79,7 +89,8 @@ public class SettingsActivity extends PreferenceActivity {
 		// their values. When their values change, their summaries are updated
 		// to reflect the new value, per the Android Design guidelines.
 		bindPreferenceSummaryToValue(findPreference("pref_textSize"));
-		bindPreferenceSummaryToValue(findPreference("pref_translat_language"));
+		bindPreferenceSummaryToValue(findPreference("pref_translate_language"));
+		bindPreferenceSummaryToValue(findPreference("pref_script_theme"));
 //		bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
 //		bindPreferenceSummaryToValue(findPreference("sync_frequency"));
 	}
@@ -87,6 +98,9 @@ public class SettingsActivity extends PreferenceActivity {
 	/** {@inheritDoc} */
 	@Override
 	public boolean onIsMultiPane() {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "SettingsActivity.java:onIsMultiPane");
+		}
 		return isXLargeTablet(this) && !isSimplePreferences(this);
 	}
 
@@ -95,6 +109,9 @@ public class SettingsActivity extends PreferenceActivity {
 	 * example, 10" tablets are extra-large.
 	 */
 	private static boolean isXLargeTablet(Context context) {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "SettingsActivity.java:isXLargeTablet");
+		}
 		return (context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) >= Configuration.SCREENLAYOUT_SIZE_XLARGE;
 	}
 
@@ -106,6 +123,9 @@ public class SettingsActivity extends PreferenceActivity {
 	 * "simplified" settings UI should be shown.
 	 */
 	private static boolean isSimplePreferences(Context context) {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "SettingsActivity.java:isSimplePreferences");
+		}
 		return ALWAYS_SIMPLE_PREFS
 				|| Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB
 				|| !isXLargeTablet(context);
@@ -115,6 +135,10 @@ public class SettingsActivity extends PreferenceActivity {
 	@Override
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	public void onBuildHeaders(List<Header> target) {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "SettingsActivity.java:onBuildHeaders");
+		}
+		
 		if (!isSimplePreferences(this)) {
 			loadHeadersFromResource(R.xml.pref_headers, target);
 		}
@@ -190,6 +214,10 @@ public class SettingsActivity extends PreferenceActivity {
 	 * @see #sBindPreferenceSummaryToValueListener
 	 */
 	private static void bindPreferenceSummaryToValue(Preference preference) {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "SettingsActivity.java:bindPreferenceSummaryToValue");
+		}
+		
 		// Set the listener to watch for value changes.
 		preference
 				.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
@@ -214,12 +242,16 @@ public class SettingsActivity extends PreferenceActivity {
 			super.onCreate(savedInstanceState);
 			addPreferencesFromResource(R.xml.pref_general);
 
+			if (MainActivity.isDebug) {
+				Log.e("gray", "SettingsActivity.java:GeneralPreferenceFragment.onCreate");
+			}
 			// Bind the summaries of EditText/List/Dialog/Ringtone preferences
 			// to their values. When their values change, their summaries are
 			// updated to reflect the new value, per the Android Design
 			// guidelines.
 			bindPreferenceSummaryToValue(findPreference("pref_textSize"));
-			bindPreferenceSummaryToValue(findPreference("pref_translat_language"));
+			bindPreferenceSummaryToValue(findPreference("pref_translate_language"));
+			bindPreferenceSummaryToValue(findPreference("pref_script_theme"));
 		}
 	}
 
@@ -235,6 +267,9 @@ public class SettingsActivity extends PreferenceActivity {
 			super.onCreate(savedInstanceState);
 			addPreferencesFromResource(R.xml.pref_notification);
 
+			if (MainActivity.isDebug) {
+				Log.e("gray", "SettingsActivity.java:NotificationPreferenceFragment.onCreate");
+			}
 			// Bind the summaries of EditText/List/Dialog/Ringtone preferences
 			// to their values. When their values change, their summaries are
 			// updated to reflect the new value, per the Android Design
@@ -254,6 +289,9 @@ public class SettingsActivity extends PreferenceActivity {
 			super.onCreate(savedInstanceState);
 			addPreferencesFromResource(R.xml.pref_data_sync);
 
+			if (MainActivity.isDebug) {
+				Log.e("gray", "SettingsActivity.java:DataSyncPreferenceFragment.onCreate");
+			}
 			// Bind the summaries of EditText/List/Dialog/Ringtone preferences
 			// to their values. When their values change, their summaries are
 			// updated to reflect the new value, per the Android Design
@@ -261,4 +299,19 @@ public class SettingsActivity extends PreferenceActivity {
 //			bindPreferenceSummaryToValue(findPreference("sync_frequency"));
 		}
 	}
+	
+	public class myDialogPreference extends DialogPreference {
+
+	    public myDialogPreference(Context context, AttributeSet attrs) {
+	        super(context, attrs);
+	    }
+
+	    @Override
+	    protected void onDialogClosed(boolean positiveResult) {
+	        super.onDialogClosed(positiveResult);
+	        persistBoolean(positiveResult);
+	    }
+
+	}
+	
 }

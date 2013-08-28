@@ -52,7 +52,9 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
     
 	public VideoView mVideoView;
 	public TextView mTextView;
-	public ProgressDialog mProgressDialog;
+	public ProgressDialog mProgressDialogScript;
+	public ProgressDialog mProgressDialogVideo;
+	public ProgressDialog mProgressDialogTranslate;
 	public RelativeLayout.LayoutParams videoviewlp;
 	
 	public CharSequence srcText = "";
@@ -159,7 +161,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			
 			if (isNetworkAvailable()){
 				
-				showProcessDialog("Please Wait...", "Loading Script...");
+				showProcessDialog(0, "Please Wait...", "Loading Script...");
 				
 				new Thread(new Runnable() 
 				{ 
@@ -204,7 +206,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 							Log.e("gray", "PlayActivity.java: TextView.onClick : " + srcText);
 						}
 						
-						showProcessDialog("Please Wait...", "Translate...");
+						showProcessDialog(2, "Please Wait...", "Translate...");
 						
 						new Thread(new Runnable() 
 						{ 
@@ -291,7 +293,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 
 	public void playVideo(){
 		
-		showProcessDialog("Please wait", "Loading video...");
+		showProcessDialog(1, "Please wait", "Loading video...");
         
 		/*
 		 * Alternatively,for streaming media you can use
@@ -403,6 +405,8 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 					Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
 					e.printStackTrace();
 				}
+				
+				mProgressDialogScript.dismiss();
 				break;
 
 			case 1:
@@ -413,17 +417,30 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 				new AlertDialog.Builder(PlayActivity.this).setTitle(srcText).setIcon( 
 						android.R.drawable.ic_dialog_info).setMessage(translatedText)
 						.show();
+				
+				mProgressDialogTranslate.dismiss();
 				break;
 			}
             
-		    mProgressDialog.dismiss();
+		    
         }  
     };  
     
-    public void showProcessDialog(CharSequence title, CharSequence message){
+    public void showProcessDialog(int what, CharSequence title, CharSequence message){
     	
-		mProgressDialog = ProgressDialog.show(PlayActivity.this, title, message, true);
-		mProgressDialog.setCancelable(true); 
+    	if (what == 0) {
+    		mProgressDialogScript = ProgressDialog.show(PlayActivity.this, title, message, true);
+    		mProgressDialogScript.setCancelable(true); 
+		} else if (what == 1) {
+			mProgressDialogVideo = ProgressDialog.show(PlayActivity.this, title, message, true);
+			mProgressDialogVideo.setCancelable(true); 
+		} else if (what == 2) {
+			mProgressDialogTranslate = ProgressDialog.show(PlayActivity.this, title, message, true);
+			mProgressDialogTranslate.setCancelable(true); 
+		} else {
+			Log.e("gray", "PlayActivity.java:showProcessDialog, not a case!");
+		}
+    	
     }
     
 	public void getScriptContent() throws Exception {
@@ -508,6 +525,33 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		s = s.replaceAll("  ", "\n\n");
 		mTextView.setText(s);
 		mTextView.setTextSize(MainActivity.textSize);
+		
+		switch (MainActivity.scriptTheme) {
+		case 0:
+			mTextView.setTextColor(0xff000000);
+			mTextView.setBackgroundColor(0xffffffff);
+			break;
+		case 1:
+			mTextView.setTextColor(0xffffffff);
+			mTextView.setBackgroundColor(0xff000000);
+			break;
+		case 2:
+			mTextView.setTextColor(0xffffffff);
+			mTextView.setBackgroundColor(0xff4D0D2A);
+			break;
+		case 3:
+			mTextView.setTextColor(0xff000000);
+			mTextView.setBackgroundColor(0xffFFF396);
+			break;
+		case 4:
+			mTextView.setTextColor(0xff00C22E);
+			mTextView.setBackgroundColor(0xff000000);
+			break;
+
+		default:
+			break;
+		}
+		
 	}
 	
 	@Override
@@ -536,7 +580,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
         mVideoView.setLayoutParams(videoviewlp);
         mVideoView.invalidate();
         
-        mProgressDialog.dismiss();
+        mProgressDialogVideo.dismiss();
     }
 	
 	public boolean isNetworkAvailable() {

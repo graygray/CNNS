@@ -78,6 +78,7 @@ public class MainActivity extends Activity {
 	// settings variable
 	public static boolean isEnableDownload;
 	public static int textSize;
+	public static int scriptTheme;
 	public static String translateLanguage;
 	
 	@Override
@@ -102,7 +103,8 @@ public class MainActivity extends Activity {
         if (textSize > 50){
         	textSize = 50;
         }
-        translateLanguage = sharedPrefs.getString("pref_translat_language", "zh-TW");
+        scriptTheme = Integer.valueOf(sharedPrefs.getString("pref_script_theme", "0"));
+        translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
 		
 		// check if need to update, set isNeedUpdate = true / false
 		// get current date 
@@ -210,7 +212,8 @@ public class MainActivity extends Activity {
 			if (isDebug) {
 				Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getBoolean("pref_download", false) );
 				Log.e("gray", "PlayActivity.java: pref_textSize :" + sharedPrefs.getString("pref_textSize", "18") );
-				Log.e("gray", "PlayActivity.java: pref_translat_language :" + sharedPrefs.getString("pref_translat_language", "zh-TW") );
+				Log.e("gray", "PlayActivity.java: pref_script_theme :" + sharedPrefs.getString("pref_script_theme", "0") );
+				Log.e("gray", "PlayActivity.java: pref_translate_language :" + sharedPrefs.getString("pref_translat_language", "zh-TW") );
 			}
 			
 			isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
@@ -223,7 +226,9 @@ public class MainActivity extends Activity {
 				textSize = 50;
 			}
 			
-			translateLanguage = sharedPrefs.getString("pref_translat_language", "zh-TW");
+			scriptTheme = Integer.valueOf(sharedPrefs.getString("pref_script_theme", "0"));
+
+			translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
 					
 			break;
 			

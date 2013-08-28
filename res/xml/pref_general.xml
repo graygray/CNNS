@@ -18,6 +18,15 @@
         android:singleLine="true"
         android:title="@string/pref_title_setTextSize" />
 
+    <ListPreference
+        android:defaultValue="0"
+        android:entries="@array/pref_script_theme"
+        android:entryValues="@array/pref_script_theme_values"
+        android:key="pref_script_theme"
+        android:negativeButtonText="@null"
+        android:positiveButtonText="@null"
+        android:title="@string/pref_title_set_script_theme" />
+    
     <!--
          NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
          dismiss it.
@@ -28,8 +37,9 @@
         android:defaultValue="zh-TW"
         android:entries="@array/pref_translate_language"
         android:entryValues="@array/pref_translate_language_values"
-        android:key="pref_translat_language"
+        android:key="pref_translate_language"
         android:negativeButtonText="@null"
         android:positiveButtonText="@null"
         android:title="@string/pref_title_set_translate_language" />
+    
 </PreferenceScreen>
