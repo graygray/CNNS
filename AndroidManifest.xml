@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.graylin.cnns"
-    android:versionCode="14"
-    android:versionName="1.14" >
+    android:versionCode="17"
+    android:versionName="1.17" >
 
     <uses-sdk
         android:minSdkVersion="9"
@@ -11,7 +11,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -36,6 +36,14 @@
         <activity
             android:name="com.graylin.cnns.SettingsActivity"
             android:label="@string/title_activity_settings" >
+        </activity>
+        <activity
+            android:name="com.graylin.cnns.NoteListActivity"
+            android:label="@string/title_activity_note_list" >
+        </activity>
+        <activity
+            android:name="com.graylin.cnns.NoteActivity"
+            android:label="@string/title_activity_note" >
         </activity>
     </application>
 

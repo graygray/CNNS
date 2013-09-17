@@ -41,8 +41,8 @@ import android.widget.SimpleAdapter;
 
 public class MainActivity extends Activity {
 	 
-//	public static boolean isDebug = false;
-	public static boolean isDebug = true;
+	public static boolean isDebug = false;
+//	public static boolean isDebug = true;
 
 	public static boolean isNeedUpdate = false;
 	public static boolean isEverLoaded = false;
@@ -80,6 +80,7 @@ public class MainActivity extends Activity {
 	public static int textSize;
 	public static int scriptTheme;
 	public static String translateLanguage;
+	public static boolean isEnableLongPressTranslate;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -90,21 +91,32 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: START ===============");
 		}
 		
+		// init array
+		for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
+			cnnListStringArray[i] = "initail string value";
+			cnnScriptAddrStringArray[i] = "initail string value";
+		}
+		
 		// get SharedPreferences instance
 		sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 		sharedPrefsEditor = sharedPrefs.edit();  
 		
 		// get initial data
 		isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
-        textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", "18"));
+		try {
+			textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", "18"));
+		} catch (Exception e) {
+			Log.e("gray", "MainActivity.java: onCreate, Exception : " + e.toString() );
+		}
         if (textSize < 8) {
         	textSize = 8;
-		}
-        if (textSize > 50){
+		} else if (textSize > 50){
         	textSize = 50;
-        }
+        } 
+        
         scriptTheme = Integer.valueOf(sharedPrefs.getString("pref_script_theme", "0"));
         translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
+        isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
 		
 		// check if need to update, set isNeedUpdate = true / false
 		// get current date 
@@ -124,7 +136,7 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: currentDate: " + currentDate);
 			Log.e("gray", "MainActivity.java: lastUpdateDate: " + lastUpdateDate);
 			Log.e("gray", "MainActivity.java: isNeedUpdate: " + isNeedUpdate);
-			isNeedUpdate = true;
+//			isNeedUpdate = true;
 		}
 		
 		// check if need update (every hour check right now)
@@ -218,18 +230,23 @@ public class MainActivity extends Activity {
 			
 			isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
 			
-			textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", "18"));
-			if (textSize < 8) {
-				textSize = 8;
+			try {
+				textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", "18"));
+			} catch (Exception e) {
+				Log.e("gray", "MainActivity.java: onCreate, Exception : " + e.toString() );
 			}
-			if (textSize > 50){
-				textSize = 50;
-			}
+	        if (textSize < 8) {
+	        	textSize = 8;
+			} else if (textSize > 50){
+	        	textSize = 50;
+	        } 
 			
 			scriptTheme = Integer.valueOf(sharedPrefs.getString("pref_script_theme", "0"));
 
 			translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
 					
+			isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
+			
 			break;
 			
 		case 1:
@@ -341,9 +358,13 @@ public class MainActivity extends Activity {
         @Override  
         public void handleMessage(Message msg) {
         	
-        	showListView();
-        	mProgressDialog.dismiss();
-		    mProgressDialog.dismiss();
+			try {
+				mProgressDialog.dismiss();
+				mProgressDialog = null;
+				showListView();
+			} catch (Exception e) {
+				// nothing
+			}
         }  
     };  
 	
@@ -515,15 +536,22 @@ public class MainActivity extends Activity {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
         	}
         	showAlertDialog("Information", 
+        			"What's new?\n\n" +
+        			"Add \"Quick Note\" function : \n" +
+        			"After you look up a word and translate it which will be automatically saved to a file ( also store at /sdcard/download ); " +
+        			"then you can check what you note at \"Quick Note\" page.\n\n" +
         			"Usage:\n\n" +
-        			"1. Quick translate:\n" +
-        			"by double click, need network support.\n\n" +
-        			"2. Script & video download status:\n" +
+        			"1. Quick translate : ( 2 method )\n" +
+        			"    a. by double click a word, \n" +
+        			"    b. Long press a word, then click \"menu\" key \n" +
+        			"both need network support.\n\n" +
+        			"2. Script & video download status : \n" +
         			"If files be downloaded at \"/sdcard/download\", the icon will be different obviously.\n" +
         			"Script will be downloaded automatically and the video download need to be enabled at settings page.\n\n" +
-        			"3. Long press to copy script.\n\n" +
-        			"4. Click on video or click \"menu\" key to suspend / resume video \n\n" +
-        			""
+        			"3. Click on video or click \"menu\" key to suspend / resume video \n\n" +
+        			"*********************\n" +
+        			"If you like this app or think it's useful, please help to rank it at Google Play, thanks~^^\n" +
+        			"*********************\n"
         			);
             break;
             
@@ -538,8 +566,18 @@ public class MainActivity extends Activity {
         			"Take a look at CNN Student News:\n" +
         			"http://edition.cnn.com/studentnews/\n" +
         			"and it's archive:\n" +
-        			"http://edition.cnn.com/US/studentnews/quick.guide/archive/\n\n"
+        			"http://edition.cnn.com/US/studentnews/quick.guide/archive/\n\n" +
+        			"2. Any suggestion or bug just:\n" +
+        			"mail to : llkkqq@gmail.com\n"
         			);
+            break;
+            
+        case R.id.action_notelist:
+        	if (isDebug) {
+        		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_notelist");
+        	}
+        	Intent i2 = new Intent(this, NoteListActivity.class);
+            startActivity(i2);
             break;
         }
  

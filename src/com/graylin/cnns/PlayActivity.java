@@ -122,9 +122,18 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 					request.setTitle(cnnVideoName);
 					// in order for this if to run, you must use the android 3.2 to compile your app
 					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+						
+						if (MainActivity.isDebug) {
+							Log.e("gray", "PlayActivity.java: Build.VERSION.SDK_INT:" + Build.VERSION.SDK_INT);
+							Log.e("gray", "PlayActivity.java: Build.VERSION_CODES.HONEYCOMB:" + Build.VERSION_CODES.HONEYCOMB);
+						}
 						request.allowScanningByMediaScanner();
-						request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+						request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE);
+//						request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+					} else {
+						request.setShowRunningNotification(true);
 					}
+					
 					request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, cnnVideoName);
 					
 					// get download service and enqueue file
@@ -198,9 +207,9 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		    	// double click, translate function
 		    	if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
 		    		
+		    		srcText = mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
 					if (isNetworkAvailable()){
 						
-						srcText = mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
 						if (MainActivity.isDebug) {
 							Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
 							Log.e("gray", "PlayActivity.java: TextView.onClick : " + srcText);
@@ -227,22 +236,34 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 						}).start();
 				        
 					} else {
+					    // save translate word to note
+						FileWriter fw;
+						try {
+							fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".cnnsNote.txt", true);
+							BufferedWriter bw = new BufferedWriter(fw);
+							bw.write(srcText+"\n\n");
+							bw.close();
+						} catch (IOException e) {
+							Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
+							e.printStackTrace();
+						}
 						showAlertDialog("Alert Message - translate", "No Availiable Network!!");
 					}
 				}
 		    }
 		});
 		
-//		mTextView.setOnLongClickListener(new View.OnLongClickListener() {
-//			
-//			@Override
-//			public boolean onLongClick(View v) {
-//				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
-//				Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
-//				
-//				return false;
-//			}
-//		});
+		mTextView.setOnLongClickListener(new View.OnLongClickListener() {
+			
+			@Override
+			public boolean onLongClick(View v) {
+				if (MainActivity.isDebug) {
+					Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
+					Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
+				}
+				return false;
+			}
+		});
 		
 		// dialog
 //		new AlertDialog.Builder(this).setTitle("½Ð¿é¤J").setIcon( 
@@ -339,7 +360,15 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			MainActivity.translateLanguage.equalsIgnoreCase("ms") ||
 			MainActivity.translateLanguage.equalsIgnoreCase("id") ||
 			MainActivity.translateLanguage.equalsIgnoreCase("th") ||
-			MainActivity.translateLanguage.equalsIgnoreCase("vi")	) {
+			MainActivity.translateLanguage.equalsIgnoreCase("vi") ||
+			MainActivity.translateLanguage.equalsIgnoreCase("bg") ||	
+			MainActivity.translateLanguage.equalsIgnoreCase("fi") ||	
+			MainActivity.translateLanguage.equalsIgnoreCase("hi") ||	
+			MainActivity.translateLanguage.equalsIgnoreCase("hu") ||
+			MainActivity.translateLanguage.equalsIgnoreCase("fa") ||	
+			MainActivity.translateLanguage.equalsIgnoreCase("pt") ||	
+			MainActivity.translateLanguage.equalsIgnoreCase("uk")	
+																		) {
 			XPATH = "//div[@class='translateTxt']";
 		} else if (MainActivity.translateLanguage.equalsIgnoreCase("es")) {
 			XPATH = "//div[@id='tabr1']";
@@ -381,9 +410,28 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	    		translatedText += resultNode.getText().toString() + "\n";
 			}
 	        
+	    	if (MainActivity.translateLanguage.equalsIgnoreCase("vi")) {
+	    		translatedText = htmlUnicodeToJavaUnicode(translatedText);
+			}
+	    	
 	    } else {
 			Log.e("gray", "PlayActivity.java: " + "statsNode.length < 0");
 		}
+	    
+	    // save translate word to note
+		FileWriter fw;
+		try {
+			fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".cnnsNote.txt", true);
+			BufferedWriter bw = new BufferedWriter(fw);
+//			bw.write(srcString + "\n" + translatedText + "\n\n");
+			translatedText = translatedText.replaceAll("\n\n", "\n");
+			bw.write(srcString + translatedText + "\n");
+			bw.close();
+		} catch (IOException e) {
+			Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
+			e.printStackTrace();
+		}
+	    
 	}
 	
 	Handler handler = new Handler() {  
@@ -406,7 +454,13 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 					e.printStackTrace();
 				}
 				
-				mProgressDialogScript.dismiss();
+				try {
+					mProgressDialogScript.dismiss();
+					mProgressDialogScript = null;
+				} catch (Exception e) {
+					// nothing
+				}
+				
 				break;
 
 			case 1:
@@ -418,7 +472,13 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 						android.R.drawable.ic_dialog_info).setMessage(translatedText)
 						.show();
 				
-				mProgressDialogTranslate.dismiss();
+				try {
+					mProgressDialogTranslate.dismiss();
+					mProgressDialogTranslate = null;
+				} catch (Exception e) {
+					// nothing
+				}
+				
 				break;
 			}
             
@@ -547,11 +607,21 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			mTextView.setTextColor(0xff00C22E);
 			mTextView.setBackgroundColor(0xff000000);
 			break;
-
+		case 5:
+			mTextView.setTextColor(0xffffffff);
+			mTextView.setBackgroundColor(0xff008312);
+			break;
+		case 6:
+			mTextView.setTextColor(0xffffffff);
+			mTextView.setBackgroundColor(0xff1038AA);
+			break;
+		case 7:
+			mTextView.setTextColor(0xffffffff);
+			mTextView.setBackgroundColor(0xffA8050A);
+			break;
 		default:
 			break;
 		}
-		
 	}
 	
 	@Override
@@ -580,7 +650,12 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
         mVideoView.setLayoutParams(videoviewlp);
         mVideoView.invalidate();
         
-        mProgressDialogVideo.dismiss();
+        try {
+        	mProgressDialogVideo.dismiss();
+			mProgressDialogVideo = null;
+		} catch (Exception e) {
+			// nothing
+		}
     }
 	
 	public boolean isNetworkAvailable() {
@@ -672,9 +747,95 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 				mVideoView.start();
 			}
 	    	
+	    	if (MainActivity.isEnableLongPressTranslate) {
+				
+	    		//translate
+	    		if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
+	    			
+	    			srcText = mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
+	    			if (isNetworkAvailable()){
+	    				
+	    				if (MainActivity.isDebug) {
+	    					Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
+	    					Log.e("gray", "PlayActivity.java: TextView.onClick : " + srcText);
+	    				}
+	    				
+	    				showProcessDialog(2, "Please Wait...", "Translate...");
+	    				
+	    				new Thread(new Runnable() 
+	    				{ 
+	    					@Override
+	    					public void run() 
+	    					{ 
+	    						try {
+	    							getTranslateString(srcText);
+	    							handler.sendEmptyMessage(1);
+	    							if (MainActivity.isDebug) {
+	    								Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
+	    							}
+	    						} catch (Exception e) {
+	    							Log.e("gray", "PlayActivity.java:run, Exception:" + e.toString());  
+	    							e.printStackTrace();
+	    						}
+	    					} 
+	    				}).start();
+	    				
+	    			} else {
+	    				 // save translate word to note
+						FileWriter fw;
+						try {
+							fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".cnnsNote.txt", true);
+							BufferedWriter bw = new BufferedWriter(fw);
+							bw.write(srcText+"\n\n");
+							bw.close();
+						} catch (IOException e) {
+							Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
+							e.printStackTrace();
+						}
+	    				showAlertDialog("Alert Message - translate", "No Availiable Network!!");
+	    			}
+	    		}
+			}
+	    	
 	        return true;
 	    }
 	    return super.onKeyDown(keyCode, event);
+	}
+	
+	public String htmlUnicodeToJavaUnicode(String inputs) {
+		StringBuffer result = new StringBuffer("");
+		int position = inputs.indexOf("&#");
+		int position2 = inputs.indexOf(";", position + 2);
+		if (position >= 0 && position2 >= 0) {
+			String befores = inputs.substring(0, position);
+			String afters = inputs.substring(position2 + 1, inputs.length());
+			String middles = inputs.substring(position + 2, position2);
+
+			String hexString = Integer.toHexString(Integer.parseInt(middles));
+			if (hexString.length() % 2 != 0) {
+				hexString = "0".concat(hexString);
+			}
+
+			int hl = hexString.length() / 2;
+			byte[] p = { -2, -1, 0, 0 };
+			hl = 3;
+			int initf = 0;
+			for (int i = 0; i < hexString.length(); i += 2) {
+				p[hl - 1] = (byte) Integer.parseInt(
+						hexString.substring(i, i + 2), 16);
+				initf++;
+				hl++;
+			}
+			try {
+				result = result.append(befores).append(new String(p, "UTF-16"))
+						.append(htmlUnicodeToJavaUnicode(afters));
+			} catch (Exception e) {
+				//
+			}
+		} else {
+			result = result.append(inputs);
+		}
+		return result.toString();
 	}
 	
 	// do't show settings at this page
