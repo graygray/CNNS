@@ -41,8 +41,8 @@ import android.widget.SimpleAdapter;
 
 public class MainActivity extends Activity {
 	 
-	public static boolean isDebug = false;
-//	public static boolean isDebug = true;
+//	public static boolean isDebug = false;
+	public static boolean isDebug = true;
 
 	public static boolean isNeedUpdate = false;
 	public static boolean isEverLoaded = false;
@@ -81,6 +81,7 @@ public class MainActivity extends Activity {
 	public static int scriptTheme;
 	public static String translateLanguage;
 	public static boolean isEnableLongPressTranslate;
+	public static boolean isEnableSoftButtonTranslate;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -117,6 +118,7 @@ public class MainActivity extends Activity {
         scriptTheme = Integer.valueOf(sharedPrefs.getString("pref_script_theme", "0"));
         translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
         isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
+        isEnableSoftButtonTranslate = sharedPrefs.getBoolean("pref_soft_button_translate", false);
 		
 		// check if need to update, set isNeedUpdate = true / false
 		// get current date 
@@ -247,6 +249,8 @@ public class MainActivity extends Activity {
 					
 			isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
 			
+			isEnableSoftButtonTranslate = sharedPrefs.getBoolean("pref_soft_button_translate", false);
+			
 			break;
 			
 		case 1:
@@ -275,7 +279,7 @@ public class MainActivity extends Activity {
         	
         	HashMap<String, Object> map = new HashMap<String, Object>();  
         	
-        	String [] tempSA = new String [20];
+        	String [] tempSA = new String [32];
         	String cnnVideoName = "";
     		tempSA = cnnScriptAddrStringArray[i].split("/");
 			int year;
@@ -321,7 +325,7 @@ public class MainActivity extends Activity {
 				if (isDebug) {
 					Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
 				}
-				String [] tempSA = new String [20];
+				String [] tempSA = new String [32];
 				tempSA = cnnScriptAddrStringArray[position].split("/");
 				
 				if (isDebug) {
@@ -536,19 +540,25 @@ public class MainActivity extends Activity {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
         	}
         	showAlertDialog("Information", 
-        			"What's new?\n\n" +
-        			"Add \"Quick Note\" function : \n" +
+        			"What's new in this version?\n\n" +
+        			"add software button to translate (for devices can't perform \"double click\" or no \"MENU\" key) \n\n" +
+        			"Usage:\n\n" +
+        			"1. Quick translate : ( 3 method )\n" +
+        			"    a. by double click a word. \n" +
+        			"    some devices can't perform \"a\" method, try b or c; \n" +
+        			"    method b / c need to be enabled first at \"settings\" page; \n" +
+        			"    b. Long press to select a word, then click \"MENU\" key. \n" +
+        			"    if your device don't have \"MENU\" key, try c. \n" +
+        			"    c. Long press to select a word, then click \"Translate\" button. \n" +
+        			"    all need network support.\n\n" +
+        			"2. Script & video download status : \n" +
+        			"If the downloaded file exist at \"/sdcard/download\", the icon will be different obviously.\n" +
+        			"The script will be downloaded automatically but the video download need to be enabled at \"settings\" page.\n" +
+        			"You can perform offline jobs (without network) after downloading video / script files.\n\n" +
+        			"3. Click on video or click \"MENU\" key to suspend / resume video \n\n" +
+        			"4. Quick Note : \n" +
         			"After you look up a word and translate it which will be automatically saved to a file ( also store at /sdcard/download ); " +
         			"then you can check what you note at \"Quick Note\" page.\n\n" +
-        			"Usage:\n\n" +
-        			"1. Quick translate : ( 2 method )\n" +
-        			"    a. by double click a word, \n" +
-        			"    b. Long press a word, then click \"menu\" key \n" +
-        			"both need network support.\n\n" +
-        			"2. Script & video download status : \n" +
-        			"If files be downloaded at \"/sdcard/download\", the icon will be different obviously.\n" +
-        			"Script will be downloaded automatically and the video download need to be enabled at settings page.\n\n" +
-        			"3. Click on video or click \"menu\" key to suspend / resume video \n\n" +
         			"*********************\n" +
         			"If you like this app or think it's useful, please help to rank it at Google Play, thanks~^^\n" +
         			"*********************\n"

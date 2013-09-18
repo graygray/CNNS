@@ -14,8 +14,10 @@
     <string name="pref_title_add_friends_to_messages">Add friends to messages</string>
     <string name="pref_title_download">Enable Auto Download</string>
     <string name="pref_description_download">If checked, will download video automatically to sdcard</string>
-    <string name="pref_longpress_translate_title">Enable Long Press Translate</string>
-    <string name="pref_longpress_translate_description">Long press a word, then click \"menu\" key</string>
+    <string name="pref_longpress_translate_title">Enable \"MENU\" key Translate</string>
+    <string name="pref_longpress_translate_description">Long press to select a word, then click \"MENU\" key</string>
+    <string name="pref_soft_button_translate_title">Enable Soft Translate Button</string>
+    <string name="pref_soft_button_translate_description">Long press to select a word, then click \"Translate\" button ( right top of video )</string>
     <string name="pref_title_setTextSize">Set Script Text Size (8 ~ 50)</string>
     <string name="pref_description_setTextSize">Set Script Text Size</string>
     <string name="pref_default_TextSize">18</string>

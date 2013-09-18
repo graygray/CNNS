@@ -10,5 +10,6 @@
     <string name="action_notelist">Quick Note</string>
     <string name="title_activity_note_list">Quick Note List</string>
     <string name="title_activity_note">Note Content</string>
+    <string name="string_translate">Translate</string>
 
 </resources>

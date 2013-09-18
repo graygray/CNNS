@@ -23,6 +23,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.app.ProgressDialog;
@@ -30,12 +31,18 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.util.DisplayMetrics;
+import android.text.method.MovementMethod;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -86,7 +93,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			Log.e("gray", "PlayActivity.java: cnnScriptPath : " + cnnScriptPath);
 		}
 		
-		String [] tempSA = new String [20];
+		String [] tempSA = new String [32];
 		tempSA = cnnVideoPath.split("/");
 		
 		if (MainActivity.isDebug) {
@@ -200,6 +207,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		}
 		
 		mTextView = (TextView) findViewById(R.id.tv_webContent);
+		registerForContextMenu(mTextView);
 		
 		mTextView.setOnClickListener(new View.OnClickListener(){
 		    public void onClick(View v){
@@ -261,6 +269,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 					Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
 					Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
 				}
+				
 				return false;
 			}
 		});
@@ -297,6 +306,73 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 //		        return gestureDetector.onTouchEvent(event);
 //		    }
 //		});
+
+		final Button translateButton = (Button) findViewById(R.id.translate_button);
+		if (MainActivity.isEnableSoftButtonTranslate) {
+			translateButton.setVisibility(View.VISIBLE);
+		} else {
+			translateButton.setVisibility(View.GONE);
+		}
+		translateButton.setOnClickListener(new Button.OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+
+				if (MainActivity.isDebug) {
+					Log.e("gray", "PlayActivity.java:onClick, translateButton");
+				}
+				if (MainActivity.isEnableSoftButtonTranslate) {
+					
+		    		//translate
+		    		if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
+		    			
+		    			srcText = mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
+		    			if (isNetworkAvailable()){
+		    				
+		    				if (MainActivity.isDebug) {
+		    					Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
+		    					Log.e("gray", "PlayActivity.java: TextView.onClick : " + srcText);
+		    				}
+		    				
+		    				showProcessDialog(2, "Please Wait...", "Translate...");
+		    				
+		    				new Thread(new Runnable() 
+		    				{ 
+		    					@Override
+		    					public void run() 
+		    					{ 
+		    						try {
+		    							getTranslateString(srcText);
+		    							handler.sendEmptyMessage(1);
+		    							if (MainActivity.isDebug) {
+		    								Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
+		    							}
+		    						} catch (Exception e) {
+		    							Log.e("gray", "PlayActivity.java:run, Exception:" + e.toString());  
+		    							e.printStackTrace();
+		    						}
+		    					} 
+		    				}).start();
+		    				
+		    			} else {
+		    				 // save translate word to note
+							FileWriter fw;
+							try {
+								fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".cnnsNote.txt", true);
+								BufferedWriter bw = new BufferedWriter(fw);
+								bw.write(srcText+"\n\n");
+								bw.close();
+							} catch (IOException e) {
+								Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
+								e.printStackTrace();
+							}
+		    				showAlertDialog("Alert Message - translate", "No Availiable Network!!");
+		    			}
+		    		}
+				}
+			}
+
+		});
 
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: END =================");
@@ -346,11 +422,30 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		
 	}
 	
-	public void getTranslateString(CharSequence srcString) throws Exception {
+	public void getTranslateString(CharSequence srcCS) throws Exception {
 
+		String srcString;
+		
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java:getTranslateString, " + "");
 		}
+		
+		boolean isSentance = false;
+		
+		srcString = srcCS.toString();
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java:getTranslateString, srcString.length()" + srcString.length());
+			Log.e("gray", "PlayActivity.java:getTranslateString, srcString.indexOf(\" \")" + srcString.indexOf(" "));
+		}
+		if (srcString.contains(" ")) {
+			if (srcString.length() - 1 == srcString.indexOf(" ")) {
+				// blank at end of string
+			} else {
+				isSentance = true;
+			}
+			srcString = srcString.replaceAll(" ", "%20");
+		}
+		
 		translatedText = "";
 		
 		String queryURL = "http://translate.reference.com/translate?query=";
@@ -367,7 +462,8 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			MainActivity.translateLanguage.equalsIgnoreCase("hu") ||
 			MainActivity.translateLanguage.equalsIgnoreCase("fa") ||	
 			MainActivity.translateLanguage.equalsIgnoreCase("pt") ||	
-			MainActivity.translateLanguage.equalsIgnoreCase("uk")	
+			MainActivity.translateLanguage.equalsIgnoreCase("uk") ||
+			isSentance
 																		) {
 			XPATH = "//div[@class='translateTxt']";
 		} else if (MainActivity.translateLanguage.equalsIgnoreCase("es")) {
@@ -465,12 +561,17 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 
 			case 1:
 				
+				ActivityManager manager = (ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);;
+				String name = manager.getRunningTasks(1).get(0).topActivity.getClassName();
 				if (MainActivity.isDebug) {
 					Log.e("gray", "PlayActivity.java: translatedText:" + translatedText);
+					Log.e("gray", "PlayActivity.java:showAlertDialog, topActivity:" + name);
 				}
-				new AlertDialog.Builder(PlayActivity.this).setTitle(srcText).setIcon( 
-						android.R.drawable.ic_dialog_info).setMessage(translatedText)
-						.show();
+		        if(name.equals("com.graylin.cnns.PlayActivity")){
+		        	new AlertDialog.Builder(PlayActivity.this).setTitle(srcText).setIcon( 
+		        			android.R.drawable.ic_dialog_info).setMessage(translatedText)
+		        			.show();
+		        }
 				
 				try {
 					mProgressDialogTranslate.dismiss();
@@ -583,6 +684,9 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		mTextView = (TextView) findViewById(R.id.tv_webContent);
 		
 		s = s.replaceAll("  ", "\n\n");
+		s = s.replaceAll("\n\n\n\n\n", "\n");
+		s = s.replaceAll("\n\n\n\n", "\n");
+//		s = s.replaceAll("\n\n\n", "\n");
 		mTextView.setText(s);
 		mTextView.setTextSize(MainActivity.textSize);
 		
@@ -669,7 +773,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	}
 	
 	public void showAlertDialog(String title, String message) {
-		AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
+        AlertDialog.Builder dialog = new AlertDialog.Builder(PlayActivity.this);
         dialog.setTitle(title);
         dialog.setMessage(message);
         dialog.show();
@@ -796,7 +900,6 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	    			}
 	    		}
 			}
-	    	
 	        return true;
 	    }
 	    return super.onKeyDown(keyCode, event);
@@ -819,11 +922,9 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			int hl = hexString.length() / 2;
 			byte[] p = { -2, -1, 0, 0 };
 			hl = 3;
-			int initf = 0;
 			for (int i = 0; i < hexString.length(); i += 2) {
 				p[hl - 1] = (byte) Integer.parseInt(
 						hexString.substring(i, i + 2), 16);
-				initf++;
 				hl++;
 			}
 			try {
@@ -838,6 +939,14 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		return result.toString();
 	}
 	
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java:onCreateContextMenu");
+		}
+	    super.onCreateContextMenu(menu, v, menuInfo);
+	}
+
 	// do't show settings at this page
 //	@Override
 //	public boolean onCreateOptionsMenu(Menu menu) {
