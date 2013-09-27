@@ -256,6 +256,10 @@ public class MainActivity extends Activity {
 		case 1:
 			showListView();
 			break;
+			
+		case 2:
+			showListView();
+			break;
 
 		}
 	}
@@ -541,7 +545,7 @@ public class MainActivity extends Activity {
         	}
         	showAlertDialog("Information", 
         			"What's new in this version?\n\n" +
-        			"add software button to translate (for devices can't perform \"double click\" or no \"MENU\" key) \n\n" +
+        			"slide left/right to rewind/forward video \n\n" +
         			"Usage:\n\n" +
         			"1. Quick translate : ( 3 method )\n" +
         			"    a. by double click a word. \n" +
@@ -586,8 +590,9 @@ public class MainActivity extends Activity {
         	if (isDebug) {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_notelist");
         	}
-        	Intent i2 = new Intent(this, NoteListActivity.class);
-            startActivity(i2);
+            Intent intent = new Intent();
+			intent.setClass(MainActivity.this, NoteListActivity.class);
+			startActivityForResult(intent, 2);
             break;
         }
  

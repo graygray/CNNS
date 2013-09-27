@@ -50,7 +50,7 @@ public class NoteListActivity extends Activity {
 				
 				Intent intent = new Intent();
 				intent.setClass(NoteListActivity.this, NoteActivity.class);
-				startActivity(intent);
+				startActivityForResult(intent, 0);
 			}
 	    });
 	    
@@ -91,6 +91,26 @@ public class NoteListActivity extends Activity {
         dialog.setTitle(title);
         dialog.setMessage(message);
         dialog.show();
+	}
+	
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+
+		if (MainActivity.isDebug) {
+			Log.e("gray", "MainActivity.java: onActivityResult, requestCode: " + requestCode);
+			Log.e("gray", "MainActivity.java: onActivityResult, resultCode: " + resultCode);
+		}
+		
+		// reload AD
+		adView.loadAd(new AdRequest());
+		
+        switch (requestCode) {
+		case 0:
+	
+			break;
+
+		}
 	}
 	
 	@Override
