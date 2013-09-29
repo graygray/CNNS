@@ -33,6 +33,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.graphics.Point;
 import android.support.v4.view.MotionEventCompat;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -41,11 +42,11 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.MediaController;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.VideoView;
 
 public class PlayActivity extends Activity implements OnCompletionListener, OnPreparedListener{
 
@@ -56,7 +57,8 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
     
 	public String XPATH = "";
     
-	public VideoView mVideoView;
+	public MyVideoView mVideoView;
+//	public VideoView mVideoView;
 	public TextView mTextView;
 	public ProgressDialog mProgressDialogScript;
 	public ProgressDialog mProgressDialogVideo;
@@ -71,47 +73,26 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	public boolean isVideoPlaying;
 	public int stopPosition;
 	public boolean isVideoTouchMove;
-	public float cutrrentX = 0, previousX = 0;
-	public float cutrrentY = 0, previousY = 0;
+	public float currentX = 0, previousX = 0;
+	public float currentY = 0, previousY = 0;
 	public int videoWidth;
 	public int videoHeight;
-	
+	public int displayWidth;
+	public int displayHeight;
+	public int videoThresholdX;
+	public int videoThresholdY;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_play);
 		
-		mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
+		mVideoView = (MyVideoView) findViewById(R.id.videoView_CNNS);
+//		mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
+		videoThresholdX = 5;
+		videoThresholdY = 30;
 		mVideoView.setOnCompletionListener(this);
 		mVideoView.setOnPreparedListener(this);
-//		mVideoView.setOnTouchListener(new OnTouchListener() {
-//		    public boolean onTouch(View v, MotionEvent event) {
-//		    	int action = MotionEventCompat.getActionMasked(event);
-//		        
-//		        switch(action) {
-//		            case (MotionEvent.ACTION_DOWN) :
-//		            	Log.e("gray", "PlayActivity.java: onTouch , Action was DOWN");
-//		                return true;
-//		            case (MotionEvent.ACTION_MOVE) :
-//		            	Log.e("gray", "PlayActivity.java: onTouch , Action was MOVE");
-//		                return true;
-//		            case (MotionEvent.ACTION_UP) :
-//		            	Log.e("gray", "PlayActivity.java: onTouch , Action was UP");
-//		                return true;
-//		            case (MotionEvent.ACTION_CANCEL) :
-//		            	Log.e("gray", "PlayActivity.java: onTouch , Action was CANCEL");
-//		                return true;
-//		            case (MotionEvent.ACTION_OUTSIDE) :
-//		            	Log.e("gray", "PlayActivity.java: onTouch , Movement occurred outside bounds " +
-//		                        "of current screen element");
-//		                return true;      
-//		            default : 
-//		            	Log.e("gray", "PlayActivity.java: onTouch , default");
-//		                return true;
-//		        }      
-//		    }
-//		});
 		
 		// change layout to avoid blocking all screen
         RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, 10);
@@ -452,30 +433,31 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		            		Log.e("gray", "PlayActivity.java: onTouch , Action was DOWN, " + event.getRawX());
 		            	}
 		            	previousX = event.getRawX();
+		            	previousY = event.getRawY();
 		                return true;
 		            case (MotionEvent.ACTION_MOVE) :
 		            	if (MainActivity.isDebug) {
 		            		Log.e("gray", "PlayActivity.java: onTouch , Action was MOVE, " + event.getRawX());
 		            	}
-		            	cutrrentX = event.getRawX();
-		            	cutrrentY = event.getRawY();
-		            	if (cutrrentX - previousX > 5) {
+		            	currentX = event.getRawX();
+		            	currentY = event.getRawY();
+		            	if (currentX - previousX > videoThresholdX) {
 							// move to right
 		            		if (MainActivity.isDebug) {
 		            			Log.e("gray", "PlayActivity.java: playVideo , move to right.");
 		            		}
 		            		stopPosition = mVideoView.getCurrentPosition(); //stopPosition is an int
 		            		mVideoView.seekTo(stopPosition + 2000);
-		            		previousX = cutrrentX;
+		            		previousX = currentX;
 		            		isVideoTouchMove = true;
-						} else if (cutrrentX - previousX < -5) {
+						} else if (currentX - previousX < -videoThresholdX) {
 							// move to left
 							if (MainActivity.isDebug) {
 								Log.e("gray", "PlayActivity.java: playVideo , move to left.");
 							}
 							stopPosition = mVideoView.getCurrentPosition(); //stopPosition is an int
 							mVideoView.seekTo(stopPosition - 2000);
-							previousX = cutrrentX;
+							previousX = currentX;
 							isVideoTouchMove = true;
 							
 						} else {
@@ -484,32 +466,24 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 							}
 						}
 		            	
-		            	if (cutrrentY - previousY > 10) {
+		            	if (currentY - previousY > videoThresholdY) {
 		            		videoWidth = videoWidth + (int)(videoWidth * 0.1);
 		            		videoHeight = videoHeight + (int)(videoHeight * 0.1);
 		            		
-		            		RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-				            videoviewlp.width = videoWidth;
-				            videoviewlp.height = videoHeight;
-				            mVideoView.setLayoutParams(videoviewlp);
-				            mVideoView.requestLayout();
-				            mVideoView.invalidate();     // very important, so that onMeasure will be triggered
-				          
-				            previousY = cutrrentY;
+		            		mVideoView.setDimensions(videoWidth, videoHeight);
+		            		mVideoView.getHolder().setFixedSize(videoWidth, videoHeight);
+		            		
+				            previousY = currentY;
 							isVideoTouchMove = true;
 							
-						} else if (cutrrentY - previousY < -10) {
+						} else if (currentY - previousY < -videoThresholdY) {
 							videoWidth = videoWidth - (int)(videoWidth * 0.1);
 		            		videoHeight = videoHeight - (int)(videoHeight * 0.1);
 		            		
-		            		RelativeLayout.LayoutParams videoviewlp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
-				            videoviewlp.width = videoWidth;
-				            videoviewlp.height = videoHeight;
-				            mVideoView.setLayoutParams(videoviewlp);
-				            mVideoView.requestLayout();
-				            mVideoView.invalidate();     // very important, so that onMeasure will be triggered
-				          
-				            previousY = cutrrentY;
+				        	mVideoView.setDimensions(videoWidth, videoHeight);
+		            		mVideoView.getHolder().setFixedSize(videoWidth, videoHeight);
+		            		
+				            previousY = currentY;
 							isVideoTouchMove = true;
 							
 						} else {
@@ -523,6 +497,12 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		            	if (MainActivity.isDebug) {
 		            		Log.e("gray", "PlayActivity.java: onTouch , Action was UP");
 		            	}
+			            // reset variable
+			            currentX = 0;
+			            currentY = 0;
+			            previousX = 0; 
+			            previousY = 0; 
+
 			            if (!isVideoTouchMove) {
 			            	if (mVideoView.isPlaying()) {
 			            		mVideoView.pause();
@@ -534,6 +514,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 							isVideoTouchMove = false;
 							return true;
 						}
+			            
 		            case (MotionEvent.ACTION_CANCEL) :
 		            	if (MainActivity.isDebug) {
 		            		Log.e("gray", "PlayActivity.java: onTouch , Action was CANCEL");
@@ -692,7 +673,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 
 			case 1:
 				
-				ActivityManager manager = (ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);;
+				ActivityManager manager = (ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
 				String name = manager.getRunningTasks(1).get(0).topActivity.getClassName();
 				if (MainActivity.isDebug) {
 					Log.e("gray", "PlayActivity.java: translatedText:" + translatedText);
@@ -876,11 +857,22 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	
 	@Override
     public void onPrepared(MediaPlayer mp) {
+		
 		videoWidth = mp.getVideoWidth();
 		videoHeight = mp.getVideoHeight();
-
+		float aspectRatio = (float)videoWidth / (float)videoHeight;
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: onPrepared");
+			Log.e("gray", "PlayActivity.java: media aspectRatio : " + aspectRatio);
+			Log.e("gray", "PlayActivity.java: videoWidth : " + videoWidth);
+			Log.e("gray", "PlayActivity.java: videoHeight : " + videoHeight);
+		}
+		
+		videoWidth = displayWidth;
+		videoHeight =  (int)( ((float)displayWidth / (float)mp.getVideoWidth() ) * videoHeight );
+		aspectRatio = (float)videoWidth / (float)videoHeight;
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java: final aspectRatio : " + aspectRatio);
 			Log.e("gray", "PlayActivity.java: videoWidth : " + videoWidth);
 			Log.e("gray", "PlayActivity.java: videoHeight : " + videoHeight);
 		}
@@ -890,6 +882,11 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
         mVideoView.setLayoutParams(videoviewlp);
         mVideoView.invalidate();
         
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        mVideoView.setDimensions(videoWidth, videoHeight);
+		mVideoView.getHolder().setFixedSize(videoWidth, videoHeight);
+		
         try {
         	mProgressDialogVideo.dismiss();
 			mProgressDialogVideo = null;
@@ -946,11 +943,32 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
         mVideoView.pause();
 	}
 	
+	@SuppressWarnings("deprecation")
 	protected void onResume() {
 		super.onResume();
+		
+		WindowManager wm = (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
+		android.view.Display display = wm.getDefaultDisplay();
+		Point size = new Point();
+		
+		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2){   //API LEVEL 13
+		     display.getSize(size);
+		     displayWidth = size.x;
+		     displayHeight = size.y;
+		}else{    
+			// for older device
+			displayWidth = display.getWidth();
+			displayHeight = display.getHeight();
+		}
+		
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: onResume ");
+			Log.e("gray", "PlayActivity.java: default width : " + displayWidth);
+			Log.e("gray", "PlayActivity.java: default height : " + displayHeight);
 		}
+		
+		mVideoView.setDimensions(displayWidth, displayHeight);
+		
 		mVideoView.seekTo(stopPosition);
 
 		if (isVideoPlaying) {

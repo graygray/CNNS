@@ -10,11 +10,12 @@
         android:layout_height="wrap_content"
         android:orientation="vertical" >
         
-	    <VideoView
+	    <com.graylin.cnns.MyVideoView
 	        android:id="@+id/videoView_CNNS"
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content" />
 	    
+	   
 	    <Button
          android:id="@+id/translate_button"
          style="?android:attr/buttonStyleSmall"
@@ -25,12 +26,14 @@
 	    
     </RelativeLayout>
 
+
     <ScrollView
         android:id="@+id/scrollView1"
         android:layout_below="@+id/RelativeLayout1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" >
 
+        
         <TextView
             android:id="@+id/tv_webContent"
             android:layout_width="wrap_content"
@@ -45,4 +48,7 @@
 
     </ScrollView>
             
+    
+        
+	    
 </RelativeLayout>

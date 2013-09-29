@@ -41,8 +41,8 @@ import android.widget.SimpleAdapter;
 
 public class MainActivity extends Activity {
 	 
-//	public static boolean isDebug = false;
-	public static boolean isDebug = true;
+	public static boolean isDebug = false;
+//	public static boolean isDebug = true;
 
 	public static boolean isNeedUpdate = false;
 	public static boolean isEverLoaded = false;
@@ -286,6 +286,12 @@ public class MainActivity extends Activity {
         	String [] tempSA = new String [32];
         	String cnnVideoName = "";
     		tempSA = cnnScriptAddrStringArray[i].split("/");
+    		if (tempSA.length == 0) {
+    			Log.e("gray", "MainActivity.java: showListView, error : tempSA length == 0 ");
+    			showAlertDialog("Error", "Something error with your network, please try it again or latter!");
+    			return;
+			}
+    		
 			int year;
 			String day;
 			
@@ -399,7 +405,47 @@ public class MainActivity extends Activity {
 	    URL url = new URL(CNNS_URL);
 	    // get HTML page root node
 	    TagNode root = htmlCleaner.clean(url);
-	
+
+	    // query XPath
+	    XPATH = "//div[@class='cnn_spccovt1cllnk cnn_spccovt1cll2']//h2//a";
+	    resultSNode = root.evaluateXPath(XPATH);
+
+	    // process data if found any node
+	    if(resultSNode.length > 0) {
+	    	
+	    	if (isDebug) {
+	    		Log.e("gray", "MainActivity.java:getCNNSTitle, resultSNode.length:" + resultSNode.length);
+			}
+	    	for (int i = 0; i < resultSNode.length; i++) {
+				
+	    		TagNode resultNode = (TagNode)resultSNode[i];
+	    		resultS = resultNode.getText().toString();
+	    		
+	    		if (resultS.regionMatches(0, matchString, 0, matchString.length())) {
+					
+	    			resultS = resultS.replace("CNN Student News -", "");
+	    			cnnListStringArray[arrayIndex] = resultS;
+	    			cnnScriptAddrStringArray[arrayIndex] = resultNode.getAttributeByName("href");
+	    			
+	    			sharedPrefsEditor.putString("cnnListString_"+arrayIndex, cnnListStringArray[arrayIndex]);
+	    			sharedPrefsEditor.putString("cnnScriptAddrString_"+arrayIndex, cnnScriptAddrStringArray[arrayIndex]);
+	    			if (isDebug) {
+	    				Log.e("gray", "MainActivity.java:getCNNSTitle, i:" + (i) + ", arrayIndex:" + arrayIndex + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+					}
+	    			
+	    			arrayIndex++;
+				} else {
+					if (isDebug) {
+						Log.e("gray", "MainActivity.java: string not match!!" );
+					}
+				}
+	    	}
+	    	
+	    } else {
+	    	Log.e("gray", "resultSNode.length <= 0, err!!");
+		}
+	    
+	    
 	    // query XPath
 	    XPATH = "//div[@class='cnn_mtt1imghtitle']//span//a";
 	    resultSNode = root.evaluateXPath(XPATH);
@@ -545,24 +591,26 @@ public class MainActivity extends Activity {
         	}
         	showAlertDialog("Information", 
         			"What's new in this version?\n\n" +
-        			"slide left/right to rewind/forward video \n\n" +
+        			"Swipe up/down to zoom out/in video\n\n" +
         			"Usage:\n\n" +
         			"1. Quick translate : ( 3 method )\n" +
-        			"    a. by double click a word. \n" +
-        			"    some devices can't perform \"a\" method, try b or c; \n" +
-        			"    method b / c need to be enabled first at \"settings\" page; \n" +
-        			"    b. Long press to select a word, then click \"MENU\" key. \n" +
-        			"    if your device don't have \"MENU\" key, try c. \n" +
-        			"    c. Long press to select a word, then click \"Translate\" button. \n" +
-        			"    all need network support.\n\n" +
-        			"2. Script & video download status : \n" +
-        			"If the downloaded file exist at \"/sdcard/download\", the icon will be different obviously.\n" +
-        			"The script will be downloaded automatically but the video download need to be enabled at \"settings\" page.\n" +
-        			"You can perform offline jobs (without network) after downloading video / script files.\n\n" +
-        			"3. Click on video or click \"MENU\" key to suspend / resume video \n\n" +
-        			"4. Quick Note : \n" +
+        			"a. By double click a word.\n" +
+        			"some devices can't perform this method, try b or c; method b or c need to be enabled first at \"settings\" page;\n" +
+        			"b. Long press to select a word, then click \"MENU\" key.\n" +
+        			"if your device don't have \"MENU\" key, try c.\n" +
+        			"c. Long press to select a word, then click \"Translate\" button.\n" +
+        			"All need network support.\n\n" +
+        			"2. Quick Note :\n" +
         			"After you look up a word and translate it which will be automatically saved to a file ( also store at /sdcard/download ); " +
         			"then you can check what you note at \"Quick Note\" page.\n\n" +
+        			"3. Video operation :\n" +
+        			"a. Click video or \"MENU\" key to pause/resume.\n" +
+        			"b. Swipe left/rifht to rewind/fast forward.\n" +
+        			"c. Swipe up/down to zoom in/out.\n\n" +
+        			"4. Script & video download status :\n" +
+        			"If the downloaded file exist at \"/sdcard/download\", the icon will be different obviously.\n" +
+        			"The script will be downloaded automatically but the video download need to be enabled at \"settings\" page.\n" +
+        			"You can perform offline jobs (without network) after downloading video & script files.\n\n" +
         			"*********************\n" +
         			"If you like this app or think it's useful, please help to rank it at Google Play, thanks~^^\n" +
         			"*********************\n"
@@ -579,9 +627,16 @@ public class MainActivity extends Activity {
         			"The show is suspended when student is on vacation.\n\n" +
         			"Take a look at CNN Student News:\n" +
         			"http://edition.cnn.com/studentnews/\n" +
-        			"and it's archive:\n" +
+        			"and it's archive here:\n" +
         			"http://edition.cnn.com/US/studentnews/quick.guide/archive/\n\n" +
-        			"2. Any suggestion or bug just:\n" +
+        			"2. Newest video not available or errors happen?\n" +
+        			"We get list from here :\n" +
+        			"http://edition.cnn.com/US/studentnews/quick.guide/archive/\n" +
+        			"But get video from here :\n" +
+        			"http://rss.cnn.com/services/podcasting/studentnews/rss.xml\n" +
+        			"because these two are not synchronized, so...\n" +
+        			"You can just try it latter.\n\n" +
+        			"3. Any suggestion or bug just:\n" +
         			"mail to : llkkqq@gmail.com\n"
         			);
             break;
