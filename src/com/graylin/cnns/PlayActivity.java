@@ -81,7 +81,9 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	public int displayHeight;
 	public int videoThresholdX;
 	public int videoThresholdY;
+	public boolean isVideoFileExit;
 	
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -90,7 +92,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		mVideoView = (MyVideoView) findViewById(R.id.videoView_CNNS);
 //		mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
 		videoThresholdX = 5;
-		videoThresholdY = 30;
+		videoThresholdY = 50;
 		mVideoView.setOnCompletionListener(this);
 		mVideoView.setOnPreparedListener(this);
 		
@@ -122,12 +124,13 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName)) {
 			
 			// video already download
+			isVideoFileExit = true;
 			cnnVideoPath = Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName;
 			playVideo();
 			
 		} else {
 			// video not exist, play from CNNS
-			
+			isVideoFileExit = false;
 			if (isNetworkAvailable()){
 				
 				// download video
@@ -170,7 +173,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 					Log.e("gray", "PlayActivity.java, NO Available Network!!");
 				}
 				
-				showAlertDialog("Alert Message : video", "No Availiable Network!!");
+				showAlertDialog("Alert Message - video", "* No Availiable Network!!\n* Video File Not Exist!!");
 				
 			}
 		}
@@ -205,7 +208,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 								Log.e("gray", "PlayActivity.java:run, " + cnnScriptContent);
 							}
 						} catch (Exception e) {
-							Log.e("gray", "PlayActivity.java:run, Exception:" + e.toString());  
+							Log.e("gray", "PlayActivity.java:run, Exception1:" + e.toString());  
 							e.printStackTrace();
 						}
 					} 
@@ -216,7 +219,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 				if (MainActivity.isDebug) {
 					Log.e("gray", "PlayActivity.java, NO Available Network!!");
 				}
-				showAlertDialog("Alert Message - script", "No Availiable Network!!");
+				showAlertDialog("Alert Message - script", "* No Availiable Network!!\n* Script File Not Exist!!");
 			}
 		}
 		
@@ -251,7 +254,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 										Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
 									}
 								} catch (Exception e) {
-									Log.e("gray", "PlayActivity.java:run, Exception:" + e.toString());  
+									Log.e("gray", "PlayActivity.java:run, Exception2:" + e.toString());  
 									e.printStackTrace();
 								}
 							} 
@@ -288,39 +291,6 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			}
 		});
 		
-		// dialog
-//		new AlertDialog.Builder(this).setTitle("請輸入").setIcon( 
-//				android.R.drawable.ic_dialog_info).setView( 
-//				new EditText(this)).setPositiveButton("確定", null) 
-//				.setNegativeButton("取消" , null).show();
-		
-		
-//	     Button btn_go=(Button)findViewById(R.id.button_test);
-//	     btn_go.setOnClickListener(new OnClickListener() {
-//
-//	      @Override
-//	      public void onClick(View v) {
-//	            Log.e("gray", "PlayActivity.java:onClick");
-//	      }
-//      });
-		
-		// Gesture
-//		final GestureDetector gestureDetector = new GestureDetector(new GestureDetector.SimpleOnGestureListener() {
-//		    public boolean onDoubleTap(MotionEvent e) {
-//		    	super.onDoubleTap(e);
-//
-//		        return true;
-//		    }
-//		});
-//		
-//		mTextView = (TextView) findViewById(R.id.tv_webContent);
-//		mTextView.setOnTouchListener(new OnTouchListener() {
-//		    public boolean onTouch(View v, MotionEvent event) {
-//		    	Log.e("gray", "PlayActivity.java: onTouch");
-//		        return gestureDetector.onTouchEvent(event);
-//		    }
-//		});
-
 		final Button translateButton = (Button) findViewById(R.id.translate_button);
 		if (MainActivity.isEnableSoftButtonTranslate) {
 			translateButton.setVisibility(View.VISIBLE);
@@ -362,7 +332,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		    								Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
 		    							}
 		    						} catch (Exception e) {
-		    							Log.e("gray", "PlayActivity.java:run, Exception:" + e.toString());  
+		    							Log.e("gray", "PlayActivity.java:run, Exception3:" + e.toString());  
 		    							e.printStackTrace();
 		    						}
 		    					} 
@@ -534,7 +504,6 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		        }      
 		    }
 		});
-		
 	}
 	
 	public void getTranslateString(CharSequence srcCS) throws Exception {
@@ -639,7 +608,6 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
 			e.printStackTrace();
 		}
-	    
 	}
 	
 	Handler handler = new Handler() {  
@@ -967,7 +935,12 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			Log.e("gray", "PlayActivity.java: default height : " + displayHeight);
 		}
 		
-		mVideoView.setDimensions(displayWidth, displayHeight);
+		if (isVideoFileExit) {
+			mVideoView.setDimensions(displayWidth, displayHeight);
+		} else {
+			mVideoView.setDimensions(1, 1);
+		}
+		mVideoView.getHolder().setFixedSize(videoWidth, videoHeight);
 		
 		mVideoView.seekTo(stopPosition);
 
@@ -978,16 +951,6 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		}
 	}
 	
-//	@Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//		
-//		if (MainActivity.isDebug) {
-//			Log.e("gray", "PlayActivity.java:onOptionsItemSelected, " + "");
-//		}
-//		
-//		return true;
-//	}
-
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		
@@ -1032,7 +995,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	    								Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
 	    							}
 	    						} catch (Exception e) {
-	    							Log.e("gray", "PlayActivity.java:run, Exception:" + e.toString());  
+	    							Log.e("gray", "PlayActivity.java:run, Exception4:" + e.toString());  
 	    							e.printStackTrace();
 	    						}
 	    					} 
@@ -1101,6 +1064,16 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	    super.onCreateContextMenu(menu, v, menuInfo);
 	}
 
+//	@Override
+//  public boolean onOptionsItemSelected(MenuItem item) {
+//		
+//		if (MainActivity.isDebug) {
+//			Log.e("gray", "PlayActivity.java:onOptionsItemSelected, " + "");
+//		}
+//		
+//		return true;
+//	}
+	
 	// do't show settings at this page
 //	@Override
 //	public boolean onCreateOptionsMenu(Menu menu) {

@@ -16,6 +16,7 @@ import com.google.ads.AdRequest;
 import com.google.ads.AdSize;
 import com.google.ads.AdView;
   
+import android.annotation.SuppressLint;
 import android.app.Activity;  
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -92,12 +93,6 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: START ===============");
 		}
 		
-		// init array
-		for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
-			cnnListStringArray[i] = "initail string value";
-			cnnScriptAddrStringArray[i] = "initail string value";
-		}
-		
 		// get SharedPreferences instance
 		sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 		sharedPrefsEditor = sharedPrefs.edit();  
@@ -113,7 +108,33 @@ public class MainActivity extends Activity {
         	textSize = 8;
 		} else if (textSize > 50){
         	textSize = 50;
-        } 
+        }
+        
+        isEverLoaded = sharedPrefs.getBoolean("isEverLoaded", false);
+        if (isEverLoaded) {
+        	
+        	if (isDebug) {
+        		Log.e("gray", "MainActivity.java: isEverLoaded !!");
+			}
+        	for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
+				cnnListStringArray[i] = sharedPrefs.getString("cnnListString_"+i, "");
+				cnnScriptAddrStringArray[i] = sharedPrefs.getString("cnnScriptAddrString_"+i, "");
+				
+				if (isDebug) {
+					Log.e("gray", "MainActivity.java: cnnListStringArray[i]:" + cnnListStringArray[i]);
+					Log.e("gray", "MainActivity.java: cnnScriptAddrStringArray[i]:" + cnnScriptAddrStringArray[i]);
+				}
+			}
+        	showListView();
+        	
+		} else {
+			
+			// initial array
+			for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
+				cnnListStringArray[i] = "initail string value";
+				cnnScriptAddrStringArray[i] = "initail string value";
+			}
+		}
         
         scriptTheme = Integer.valueOf(sharedPrefs.getString("pref_script_theme", "0"));
         translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
@@ -138,7 +159,7 @@ public class MainActivity extends Activity {
 			Log.e("gray", "MainActivity.java: currentDate: " + currentDate);
 			Log.e("gray", "MainActivity.java: lastUpdateDate: " + lastUpdateDate);
 			Log.e("gray", "MainActivity.java: isNeedUpdate: " + isNeedUpdate);
-//			isNeedUpdate = true;
+			isNeedUpdate = true;
 		}
 		
 		// check if need update (every hour check right now)
@@ -146,7 +167,7 @@ public class MainActivity extends Activity {
 			
 			if (isNetworkAvailable()) {
 				
-				showProcessDialog("Please Wait...", "Getting Data From CNN Student News...");
+				showProcessDialog("Please Wait...", "Update Data From CNN Student News...");
 				
 				new Thread(new Runnable() 
 				{ 
@@ -169,6 +190,15 @@ public class MainActivity extends Activity {
 					//never have cnns data
 					showAlertDialog("Error", "Never get data from CNN student news!");
 				} else {
+					for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
+//						cnnListStringArray[i] = sharedPrefs.getString("cnnListString_"+i, "");
+//						cnnScriptAddrStringArray[i] = sharedPrefs.getString("cnnScriptAddrString_"+i, "");
+						
+						if (isDebug) {
+							Log.e("gray", "MainActivity.java: cnnListStringArray[i]:" + cnnListStringArray[i]);
+							Log.e("gray", "MainActivity.java: cnnScriptAddrStringArray[i]:" + cnnScriptAddrStringArray[i]);
+						}
+					}
 					showListView();
 				}
 			}
@@ -177,8 +207,8 @@ public class MainActivity extends Activity {
 		} else {		
 			
 			for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
-				cnnListStringArray[i] = sharedPrefs.getString("cnnListString_"+i, "");
-				cnnScriptAddrStringArray[i] = sharedPrefs.getString("cnnScriptAddrString_"+i, "");
+//				cnnListStringArray[i] = sharedPrefs.getString("cnnListString_"+i, "");
+//				cnnScriptAddrStringArray[i] = sharedPrefs.getString("cnnScriptAddrString_"+i, "");
 				
 				if (isDebug) {
 					Log.e("gray", "MainActivity.java: cnnListStringArray[i]:" + cnnListStringArray[i]);
@@ -285,21 +315,25 @@ public class MainActivity extends Activity {
         	
         	String [] tempSA = new String [32];
         	String cnnVideoName = "";
-    		tempSA = cnnScriptAddrStringArray[i].split("/");
-    		if (tempSA.length == 0) {
-    			Log.e("gray", "MainActivity.java: showListView, error : tempSA length == 0 ");
-    			showAlertDialog("Error", "Something error with your network, please try it again or latter!");
-    			return;
+    		tempSA = cnnListStringArray[i].split(" ");
+    		
+    		if (isDebug) {
+    			Log.e("gray", "MainActivity.java:cnnListStringArray, length : " + tempSA.length);
+    			for (int j = 0; j < tempSA.length; j++) {
+    				Log.e("gray", "MainActivity.java:showListView, " + j + " : " + tempSA[j]);
+    			}
+			}
+
+    		String month = getMonth(tempSA[1]);
+    		String day = String.format(Locale.US, "%02d", Integer.valueOf(tempSA[2].replaceAll(",", "")));
+    		int year = Integer.valueOf(tempSA[3]) - 2000;
+    		
+    		if (isDebug) {
+    			Log.e("gray", "MainActivity.java:showListView, " + month + day + year);
 			}
     		
-			int year;
-			String day;
-			
-			year = Integer.valueOf(tempSA[1]) - 2000;
-			day = String.format(Locale.US, "%02d", Integer.valueOf(tempSA[3]) + 1);
-			
     		// check if video file already download, or set path to local dir
-    		cnnVideoName = "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix;
+    		cnnVideoName = "/sn-" + month + day + year + videoAddressStringPostfix;
     		if (isDebug) {
     			Log.e("gray", "path: " + Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName);
 			}
@@ -335,25 +369,44 @@ public class MainActivity extends Activity {
 				if (isDebug) {
 					Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
 				}
-				String [] tempSA = new String [32];
-				tempSA = cnnScriptAddrStringArray[position].split("/");
+	        	String [] tempSA = new String [32];
+	    		tempSA = cnnListStringArray[position].split(" ");
+	    		
+	    		if (isDebug) {
+	    			Log.e("gray", "MainActivity.java:cnnListStringArray, length : " + tempSA.length);
+	    			for (int j = 0; j < tempSA.length; j++) {
+	    				Log.e("gray", "MainActivity.java:showListView, " + j + " : " + tempSA[j]);
+	    			}
+				}
+
+	    		String month = getMonth(tempSA[1]);
+	    		String day = String.format(Locale.US, "%02d", Integer.valueOf(tempSA[2].replaceAll(",", "")));
+	    		int year = Integer.valueOf(tempSA[3]) - 2000;
+	    		
+	    		if (isDebug) {
+	    			Log.e("gray", "MainActivity.java:showListView, " + month + day + year);
+				}
+	    		
+				String [] tempSA2 = new String [32];
+				tempSA2 = cnnScriptAddrStringArray[position].split("/");
 				
 				if (isDebug) {
-					for (int i = 0; i < tempSA.length; i++) {
-						Log.e("gray", "MainActivity.java: " + tempSA[i]);
+					for (int i = 0; i < tempSA2.length; i++) {
+						Log.e("gray", "MainActivity.java: " + tempSA2[i]);
 					}
 				}
 				
-				int year;
-//				int month;
-				String day;
+				int putYear;
+				int putMonth;
+				String putDay, putMonthS;
 				
-				year = Integer.valueOf(tempSA[1]) - 2000;
-//				month = Integer.valueOf(tempSA[2]);
-				day = String.format(Locale.US, "%02d", Integer.valueOf(tempSA[3]) + 1);
+				putYear = Integer.valueOf(tempSA2[1]);
+				putMonth = Integer.valueOf(tempSA2[2]);
+				putMonthS = String.format(Locale.US, "%02d", putMonth);
+				putDay = String.format(Locale.US, "%02d", Integer.valueOf(tempSA2[3]));
 				
-				scriptAddressString =  scriptAddressStringPrefix + year + tempSA[2] + "/" + day + scriptAddressStringPostfix;
-				videoAddressString = videoAddressStringPrefix + tempSA[1] + "/" + tempSA[2] + "/" + tempSA[3] + "/sn-" + tempSA[2] + day + year + videoAddressStringPostfix; 
+				scriptAddressString =  scriptAddressStringPrefix + year + month + "/" + day + scriptAddressStringPostfix;
+				videoAddressString = videoAddressStringPrefix + putYear + "/" + putMonthS + "/" + putDay + "/sn-" + month + day + year + videoAddressStringPostfix; 
 
 				if (isDebug) {
 					Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString:" + scriptAddressString);
@@ -368,6 +421,7 @@ public class MainActivity extends Activity {
 		
 	}
 	
+	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {  
         @Override  
         public void handleMessage(Message msg) {
@@ -521,6 +575,8 @@ public class MainActivity extends Activity {
 				}
 	    	}
 	    	
+	    	sharedPrefsEditor.putBoolean("isEverLoaded", true);
+	    	
 	    	sharedPrefsEditor.commit();
 	        
 	    } else {
@@ -590,8 +646,8 @@ public class MainActivity extends Activity {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
         	}
         	showAlertDialog("Information", 
-        			"What's new in this version?\n\n" +
-        			"Swipe up/down to zoom out/in video\n\n" +
+        			"What's new in this version (1.23)?\n\n" +
+        			"fix offline operation errors\n\n" +
         			"Usage:\n\n" +
         			"1. Quick translate : ( 3 method )\n" +
         			"a. By double click a word.\n" +
@@ -653,6 +709,41 @@ public class MainActivity extends Activity {
  
         return true;
     }
+	
+	public String getMonth(String monthS) {
+		String month = "";
+		
+		// return string???????????
+		if (monthS.contains("Jan")) {
+			month = "01";
+		} else if (monthS.contains("Feb")) {
+			month = "02";
+		} else if (monthS.contains("Mar")) {
+			month = "03";
+		} else if (monthS.contains("Apr")) {
+			month = "04";
+		} else if (monthS.contains("May")) {
+			month = "05";
+		} else if (monthS.contains("Jun")) {
+			month = "06";
+		} else if (monthS.contains("Jul")) {
+			month = "07";
+		} else if (monthS.contains("Aug")) {
+			month = "08";
+		} else if (monthS.contains("Sep")) {
+			month = "09";
+		} else if (monthS.contains("Oct")) {
+			month = "10";
+		} else if (monthS.contains("Nov")) {
+			month = "11";
+		} else if (monthS.contains("Dec")) {
+			month = "12";
+		} else {
+			Log.e("gray", "MainActivity.java:getMonth, " + "Error : no match!!");
+		}
+		
+		return month;
+	}
 	
 	@Override
 	public void onDestroy() {
