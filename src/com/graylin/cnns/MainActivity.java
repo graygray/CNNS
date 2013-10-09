@@ -2,8 +2,11 @@ package com.graylin.cnns;
 
 import java.io.File;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -188,15 +191,13 @@ public class MainActivity extends Activity {
 				
 				if (lastUpdateDate.equalsIgnoreCase("")) {
 					//never have cnns data
-					showAlertDialog("Error", "Never get data from CNN student news!");
+					showAlertDialog("Error", "Never get data from CNN student news! Please enable network and try again.");
 				} else {
-					for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
-//						cnnListStringArray[i] = sharedPrefs.getString("cnnListString_"+i, "");
-//						cnnScriptAddrStringArray[i] = sharedPrefs.getString("cnnScriptAddrString_"+i, "");
 						
-						if (isDebug) {
-							Log.e("gray", "MainActivity.java: cnnListStringArray[i]:" + cnnListStringArray[i]);
-							Log.e("gray", "MainActivity.java: cnnScriptAddrStringArray[i]:" + cnnScriptAddrStringArray[i]);
+					if (isDebug) {
+						for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
+						Log.e("gray", "MainActivity.java: cnnListStringArray[i]:" + cnnListStringArray[i]);
+						Log.e("gray", "MainActivity.java: cnnScriptAddrStringArray[i]:" + cnnScriptAddrStringArray[i]);
 						}
 					}
 					showListView();
@@ -206,27 +207,15 @@ public class MainActivity extends Activity {
 		// no need to update, imply cnns data ever loaded
 		} else {		
 			
-			for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
-//				cnnListStringArray[i] = sharedPrefs.getString("cnnListString_"+i, "");
-//				cnnScriptAddrStringArray[i] = sharedPrefs.getString("cnnScriptAddrString_"+i, "");
-				
-				if (isDebug) {
-					Log.e("gray", "MainActivity.java: cnnListStringArray[i]:" + cnnListStringArray[i]);
-					Log.e("gray", "MainActivity.java: cnnScriptAddrStringArray[i]:" + cnnScriptAddrStringArray[i]);
+			if (isDebug) {
+				for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
+				Log.e("gray", "MainActivity.java: cnnListStringArray[i]:" + cnnListStringArray[i]);
+				Log.e("gray", "MainActivity.java: cnnScriptAddrStringArray[i]:" + cnnScriptAddrStringArray[i]);
 				}
 			}
 			showListView();
 		}
 		
-//		Button btn_go = (Button) findViewById(R.id.button_test);
-//		btn_go.setOnClickListener(new OnClickListener() {
-//
-//			@Override
-//			public void onClick(View v) {
-//				
-//			}
-//		});
-
 		// load AD
 		adView = new AdView(this, AdSize.SMART_BANNER, "a151e4fa6d7cf0e");
 		LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
@@ -312,44 +301,67 @@ public class MainActivity extends Activity {
         for(int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
         	
         	HashMap<String, Object> map = new HashMap<String, Object>();  
-        	
-        	String [] tempSA = new String [32];
         	String cnnVideoName = "";
-    		tempSA = cnnListStringArray[i].split(" ");
+        	
+    		String [] tempSA = new String [32];
+            tempSA = cnnScriptAddrStringArray[i].split("/");
+            if (isDebug) {
+                Log.e("gray", "MainActivity.java:cnnListStringArray, length : " + tempSA.length);
+                for (int j = 0; j < tempSA.length; j++) {
+                    Log.e("gray", "MainActivity.java:showListView, " + j + " : " + tempSA[j]);
+                }
+            }
+            
+            int archiveYear = 0, archiveMonth, archiveDay, realYear = 0, realMonth = 0, realDay = 0;
+            String archiveMonthS = null, archiveDayS = null, realMonthS = null, realDayS = null;
+            DateFormat df = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            try {
+//                Date date = df.parse("2013-12-31");
+                Date date = df.parse(tempSA[1] + "-" + tempSA[2] + "-" + tempSA[3]);
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(date);
+ 
+                archiveYear = cal.get(Calendar.YEAR);
+                archiveMonth = cal.get(Calendar.MONTH) + 1;
+                archiveDay = cal.get(Calendar.DAY_OF_MONTH);
+                archiveMonthS = String.format(Locale.US, "%02d", archiveMonth);
+                archiveDayS = String.format(Locale.US, "%02d", archiveDay);
+                
+                cal.add(Calendar.DAY_OF_MONTH, 1);
+                realYear = cal.get(Calendar.YEAR);
+                realMonth = cal.get(Calendar.MONTH) + 1;
+                realDay = cal.get(Calendar.DAY_OF_MONTH);
+                realMonthS = String.format(Locale.US, "%02d", realMonth);
+                realDayS = String.format(Locale.US, "%02d", realDay);
+                
+            } catch (ParseException e) {
+                Log.e("gray", "MainActivity.java:showListView, ParseException, " + e.toString());
+                e.printStackTrace();
+            }
     		
     		if (isDebug) {
-    			Log.e("gray", "MainActivity.java:cnnListStringArray, length : " + tempSA.length);
-    			for (int j = 0; j < tempSA.length; j++) {
-    				Log.e("gray", "MainActivity.java:showListView, " + j + " : " + tempSA[j]);
-    			}
-			}
-
-    		String month = getMonth(tempSA[1]);
-    		String day = String.format(Locale.US, "%02d", Integer.valueOf(tempSA[2].replaceAll(",", "")));
-    		int year = Integer.valueOf(tempSA[3]) - 2000;
-    		
-    		if (isDebug) {
-    			Log.e("gray", "MainActivity.java:showListView, " + month + day + year);
+    			Log.e("gray", "MainActivity.java: archive date : " + archiveYear + archiveMonthS + archiveDayS);
+    			Log.e("gray", "MainActivity.java: real date : " + realYear + realMonthS + realDayS);
 			}
     		
     		// check if video file already download, or set path to local dir
-    		cnnVideoName = "/sn-" + month + day + year + videoAddressStringPostfix;
+    		cnnVideoName = "/sn-" + realMonthS + realDayS + (realYear-2000) + videoAddressStringPostfix;
     		if (isDebug) {
-    			Log.e("gray", "path: " + Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName);
+    			Log.e("gray", "path: " + Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+cnnVideoName);
 			}
     		
     		// put title
             map.put("ItemTitle", cnnListStringArray[i]);
             
             // put script image
-            if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".txt")) {
+            if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+cnnVideoName+".txt")) {
             	map.put("ItemImage_news", R.drawable.ic_newspaper_o);  
             } else {
             	map.put("ItemImage_news", R.drawable.ic_newspaper_x);  
 			}
             
             // put video image
-            if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName)) {
+            if (isFileExist(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+cnnVideoName)) {
             	map.put("ItemImage_video", R.drawable.ic_video_o);  
             } else {
             	map.put("ItemImage_video", R.drawable.ic_video_x);  
@@ -369,44 +381,45 @@ public class MainActivity extends Activity {
 				if (isDebug) {
 					Log.e("gray", "MainActivity.java:onItemClick" + "Position : " + position + ", id : " + id);
 				}
-	        	String [] tempSA = new String [32];
-	    		tempSA = cnnListStringArray[position].split(" ");
+				
+				String [] tempSA = new String [32];
+	            tempSA = cnnScriptAddrStringArray[position].split("/");
+	            if (isDebug) {
+	                Log.e("gray", "MainActivity.java:cnnListStringArray, length : " + tempSA.length);
+	                for (int j = 0; j < tempSA.length; j++) {
+	                    Log.e("gray", "MainActivity.java:showListView, " + j + " : " + tempSA[j]);
+	                }
+	            }
+	            
+	            int archiveYear = 0, archiveMonth, archiveDay, realYear = 0, realMonth = 0, realDay = 0;
+	            String archiveMonthS = null, archiveDayS = null, realMonthS = null, realDayS = null;
+	            DateFormat df = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+	            try {
+//	                Date date = df.parse("2013-12-31");
+	                Date date = df.parse(tempSA[1] + "-" + tempSA[2] + "-" + tempSA[3]);
+	                Calendar cal = Calendar.getInstance();
+	                cal.setTime(date);
+	 
+	                archiveYear = cal.get(Calendar.YEAR);
+	                archiveMonth = cal.get(Calendar.MONTH) + 1;
+	                archiveDay = cal.get(Calendar.DAY_OF_MONTH);
+	                archiveMonthS = String.format(Locale.US, "%02d", archiveMonth);
+	                archiveDayS = String.format(Locale.US, "%02d", archiveDay);
+	                
+	                cal.add(Calendar.DAY_OF_MONTH, 1);
+	                realYear = cal.get(Calendar.YEAR);
+	                realMonth = cal.get(Calendar.MONTH) + 1;
+	                realDay = cal.get(Calendar.DAY_OF_MONTH);
+	                realMonthS = String.format(Locale.US, "%02d", realMonth);
+	                realDayS = String.format(Locale.US, "%02d", realDay);
+	                
+	            } catch (ParseException e) {
+	                Log.e("gray", "MainActivity.java:showListView, ParseException, " + e.toString());
+	                e.printStackTrace();
+	            }
 	    		
-	    		if (isDebug) {
-	    			Log.e("gray", "MainActivity.java:cnnListStringArray, length : " + tempSA.length);
-	    			for (int j = 0; j < tempSA.length; j++) {
-	    				Log.e("gray", "MainActivity.java:showListView, " + j + " : " + tempSA[j]);
-	    			}
-				}
-
-	    		String month = getMonth(tempSA[1]);
-	    		String day = String.format(Locale.US, "%02d", Integer.valueOf(tempSA[2].replaceAll(",", "")));
-	    		int year = Integer.valueOf(tempSA[3]) - 2000;
-	    		
-	    		if (isDebug) {
-	    			Log.e("gray", "MainActivity.java:showListView, " + month + day + year);
-				}
-	    		
-				String [] tempSA2 = new String [32];
-				tempSA2 = cnnScriptAddrStringArray[position].split("/");
-				
-				if (isDebug) {
-					for (int i = 0; i < tempSA2.length; i++) {
-						Log.e("gray", "MainActivity.java: " + tempSA2[i]);
-					}
-				}
-				
-				int putYear;
-				int putMonth;
-				String putDay, putMonthS;
-				
-				putYear = Integer.valueOf(tempSA2[1]);
-				putMonth = Integer.valueOf(tempSA2[2]);
-				putMonthS = String.format(Locale.US, "%02d", putMonth);
-				putDay = String.format(Locale.US, "%02d", Integer.valueOf(tempSA2[3]));
-				
-				scriptAddressString =  scriptAddressStringPrefix + year + month + "/" + day + scriptAddressStringPostfix;
-				videoAddressString = videoAddressStringPrefix + putYear + "/" + putMonthS + "/" + putDay + "/sn-" + month + day + year + videoAddressStringPostfix; 
+				scriptAddressString =  scriptAddressStringPrefix + (realYear-2000) + realMonthS + "/" + realDayS + scriptAddressStringPostfix;
+				videoAddressString = videoAddressStringPrefix + archiveYear + "/" + archiveMonthS + "/" + archiveDayS + "/sn-" + realMonthS + realDayS + (realYear-2000) + videoAddressStringPostfix; 
 
 				if (isDebug) {
 					Log.e("gray", "MainActivity.java:onItemClick, " + "scriptAddressString:" + scriptAddressString);
@@ -646,12 +659,12 @@ public class MainActivity extends Activity {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
         	}
         	showAlertDialog("Information", 
-        			"What's new in this version (1.23)?\n\n" +
-        			"fix offline operation errors\n\n" +
+        			"What's new in this version (1.24)?\n\n" +
+        			"fix crash issue on some devices.\n\n" +
         			"Usage:\n\n" +
         			"1. Quick translate : ( 3 method )\n" +
         			"a. By double click a word.\n" +
-        			"some devices can't perform this method, try b or c; method b or c need to be enabled first at \"settings\" page;\n" +
+        			"some devices can't perform this method, try b or c; method b or c need to be enabled first at \"settings\";\n" +
         			"b. Long press to select a word, then click \"MENU\" key.\n" +
         			"if your device don't have \"MENU\" key, try c.\n" +
         			"c. Long press to select a word, then click \"Translate\" button.\n" +
@@ -661,11 +674,12 @@ public class MainActivity extends Activity {
         			"then you can check what you note at \"Quick Note\" page.\n\n" +
         			"3. Video operation :\n" +
         			"a. Click video or \"MENU\" key to pause/resume.\n" +
-        			"b. Swipe left/rifht to rewind/fast forward.\n" +
-        			"c. Swipe up/down to zoom in/out.\n\n" +
+        			"b. Swipe(slide on video) left/right to rewind/fast forward.\n" +
+        			"c. Swipe up/down to zoom out/in.\n\n" +
         			"4. Script & video download status :\n" +
         			"If the downloaded file exist at \"/sdcard/download\", the icon will be different obviously.\n" +
-        			"The script will be downloaded automatically but the video download need to be enabled at \"settings\" page.\n" +
+        			"The script will be downloaded automatically;\n" +
+        			"To download video, need to enable first at \"settings\".\n" +
         			"You can perform offline jobs (without network) after downloading video & script files.\n\n" +
         			"*********************\n" +
         			"If you like this app or think it's useful, please help to rank it at Google Play, thanks~^^\n" +
@@ -690,7 +704,7 @@ public class MainActivity extends Activity {
         			"http://edition.cnn.com/US/studentnews/quick.guide/archive/\n" +
         			"But get video from here :\n" +
         			"http://rss.cnn.com/services/podcasting/studentnews/rss.xml\n" +
-        			"because these two are not synchronized, so...\n" +
+        			"Because these two are not synchronized, so...\n" +
         			"You can just try it latter.\n\n" +
         			"3. Any suggestion or bug just:\n" +
         			"mail to : llkkqq@gmail.com\n"
@@ -709,41 +723,6 @@ public class MainActivity extends Activity {
  
         return true;
     }
-	
-	public String getMonth(String monthS) {
-		String month = "";
-		
-		// return string???????????
-		if (monthS.contains("Jan")) {
-			month = "01";
-		} else if (monthS.contains("Feb")) {
-			month = "02";
-		} else if (monthS.contains("Mar")) {
-			month = "03";
-		} else if (monthS.contains("Apr")) {
-			month = "04";
-		} else if (monthS.contains("May")) {
-			month = "05";
-		} else if (monthS.contains("Jun")) {
-			month = "06";
-		} else if (monthS.contains("Jul")) {
-			month = "07";
-		} else if (monthS.contains("Aug")) {
-			month = "08";
-		} else if (monthS.contains("Sep")) {
-			month = "09";
-		} else if (monthS.contains("Oct")) {
-			month = "10";
-		} else if (monthS.contains("Nov")) {
-			month = "11";
-		} else if (monthS.contains("Dec")) {
-			month = "12";
-		} else {
-			Log.e("gray", "MainActivity.java:getMonth, " + "Error : no match!!");
-		}
-		
-		return month;
-	}
 	
 	@Override
 	public void onDestroy() {
