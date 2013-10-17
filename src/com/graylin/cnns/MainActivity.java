@@ -23,8 +23,11 @@ import android.annotation.SuppressLint;
 import android.app.Activity;  
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;  
@@ -49,8 +52,9 @@ public class MainActivity extends Activity {
 //	public static boolean isDebug = true;
 
 	public static boolean isNeedUpdate = false;
+	public static boolean waitFlag = false;
 	public static boolean isEverLoaded = false;
-
+	
 	public static final int MAX_LIST_ARRAY_SIZE = 20;
 	public static String[] cnnListStringArray = new String [MAX_LIST_ARRAY_SIZE];
 	public static String[] cnnScriptAddrStringArray = new String [MAX_LIST_ARRAY_SIZE];
@@ -87,6 +91,10 @@ public class MainActivity extends Activity {
 	public static boolean isEnableLongPressTranslate;
 	public static boolean isEnableSoftButtonTranslate;
 	
+	// broadcast receiver
+	public AudioManager audioManager;
+	public ComponentName componentName = null;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -95,6 +103,11 @@ public class MainActivity extends Activity {
 		if (isDebug) {
 			Log.e("gray", "MainActivity.java: START ===============");
 		}
+		
+		// register broadcast event
+		audioManager =(AudioManager)getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
+		componentName = new ComponentName(this, RemoteControlReceive.class);
+		audioManager.registerMediaButtonEventReceiver(componentName);  
 		
 		// get SharedPreferences instance
 		sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -132,6 +145,11 @@ public class MainActivity extends Activity {
         	
 		} else {
 			
+			showAlertDialog("First Use Message", 
+					"How to use this app please see \"Information\" page; " +
+					"errors, bugs or questions please check \"Q & A\" page first.\n\n"
+					);
+			
 			// initial array
 			for (int i = 0; i < MAX_LIST_ARRAY_SIZE; i++) {
 				cnnListStringArray[i] = "initail string value";
@@ -144,28 +162,93 @@ public class MainActivity extends Activity {
         isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
         isEnableSoftButtonTranslate = sharedPrefs.getBoolean("pref_soft_button_translate", false);
 		
+        // check if need to update, set isNeedUpdate = true / false
+        // if there is new video, then update
+        
+        // check if video of cnns website update
+		// get string of last video source (every hour check right now) 
+        isNeedUpdate = false;
+        waitFlag = false;
+        String lastVideosource = sharedPrefs.getString("lastVideosource", "");
+        if (isNetworkAvailable()) {
+        	
+        	SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd-kk", Locale.US);
+        	String currentTime = s.format(new Date());
+        	boolean isCheckVidoeUpdate = false;
+        	
+        	// get last update time
+        	String lastUpdateTime = sharedPrefs.getString("lastUpdateTime", "");
+        	
+        	if (currentTime.equalsIgnoreCase(lastUpdateTime)) {
+        		isCheckVidoeUpdate = false;
+        	} else {
+        		isCheckVidoeUpdate = true;
+        		sharedPrefsEditor.putString("lastUpdateTime", currentTime);
+        	}
+        	if (isDebug) {
+        		Log.e("gray", "MainActivity.java: currentTime: " + currentTime);
+        		Log.e("gray", "MainActivity.java: lastUpdateTime: " + lastUpdateTime);
+        		Log.e("gray", "MainActivity.java: isCheckVidoeUpdate: " + isCheckVidoeUpdate);
+        	}
+        	
+        	if (isCheckVidoeUpdate) {
+				
+        		new Thread(new Runnable() 
+        		{ 
+        			@Override
+        			public void run() 
+        			{ 
+        				try {
+        					isVideoUpdate();
+        				} catch (Exception e) {
+        					Log.e("gray", "MainActivity.java:onCreate, " + "isVideoUpdate, Exception : " + e.toString());
+        					e.printStackTrace();
+        				}
+        			} 
+        		}).start();
+        		
+        		// wait variable "isNeedUpdate" to be set
+        		while (!waitFlag) {
+        			try {
+        				Thread.sleep(200);
+        			} catch (InterruptedException e) {
+        				e.printStackTrace();
+        			}
+        		}
+			}
+        }
+		
 		// check if need to update, set isNeedUpdate = true / false
-		// get current date 
-		SimpleDateFormat s = new SimpleDateFormat("yyyy-MM-dd-KK", Locale.US);
-		String currentDate = s.format(new Date());
+		// if current date string different, then update
+		SimpleDateFormat s1 = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+		String currentDate = s1.format(new Date());
+		boolean isTooLongNoUpdate = false;
 		
 		// get last update date
 		String lastUpdateDate = sharedPrefs.getString("lastUpdateDate", "");
-
+		
 		if (currentDate.equalsIgnoreCase(lastUpdateDate)) {
-			isNeedUpdate = false;
+			isTooLongNoUpdate = false;
 		} else {
-			isNeedUpdate = true;
+			isTooLongNoUpdate = true;
 			sharedPrefsEditor.putString("lastUpdateDate", currentDate);
 		}
 		if (isDebug) {
 			Log.e("gray", "MainActivity.java: currentDate: " + currentDate);
 			Log.e("gray", "MainActivity.java: lastUpdateDate: " + lastUpdateDate);
-			Log.e("gray", "MainActivity.java: isNeedUpdate: " + isNeedUpdate);
+			Log.e("gray", "MainActivity.java: isTooLongNoupdate: " + isTooLongNoUpdate);
+		}
+		
+		if (isTooLongNoUpdate) {
+			isNeedUpdate = true;
+		}	
+			
+		// for debug, force update
+		if (isDebug) {
 			isNeedUpdate = true;
 		}
 		
-		// check if need update (every hour check right now)
+		// check if need update (there is new video && too long(1 day) no update, then update) 
 		if (isNeedUpdate) {	
 			
 			if (isNetworkAvailable()) {
@@ -181,7 +264,7 @@ public class MainActivity extends Activity {
 							getCNNSTitle();
 							handler.sendEmptyMessage(0);
 						} catch (Exception e) {
-							Log.e("gray", "MainActivity.java:run, Exception:" + e.toString());
+							Log.e("gray", "MainActivity.java:getCNNSTitle, Exception:" + e.toString());
 							e.printStackTrace();
 						}
 					} 
@@ -189,7 +272,7 @@ public class MainActivity extends Activity {
 				
 			} else {
 				
-				if (lastUpdateDate.equalsIgnoreCase("")) {
+				if (lastVideosource.equalsIgnoreCase("")) {
 					//never have cnns data
 					showAlertDialog("Error", "Never get data from CNN student news! Please enable network and try again.");
 				} else {
@@ -221,7 +304,7 @@ public class MainActivity extends Activity {
 		LinearLayout layout = (LinearLayout) findViewById(R.id.ADLayout);
 		layout.addView(adView);
 		adView.loadAd(new AdRequest());
-				
+		
          if (isDebug) {
 			Log.e("gray", "MainActivity.java: END =================");
 		}
@@ -449,10 +532,75 @@ public class MainActivity extends Activity {
         }  
     };  
 	
+    public void isVideoUpdate() throws Exception {
+    	
+    	String resultS = "";
+    	String newestVideoSource = "";
+	    Object[] resultSNode;
+	
+	    // config cleaner properties
+	    HtmlCleaner htmlCleaner = new HtmlCleaner();
+	    CleanerProperties props = htmlCleaner.getProperties();
+	    props.setAllowHtmlInsideAttributes(false);
+	    props.setAllowMultiWordAttributes(true);
+	    props.setRecognizeUnicodeChars(true);
+	    props.setOmitComments(true);
+	    
+	    // create URL object
+	    URL url = new URL("http://rss.cnn.com/services/podcasting/studentnews/rss.xml");
+	    // get HTML page root node
+	    TagNode root = htmlCleaner.clean(url);
+
+	    // query XPath
+//	    XPATH = "//div[@class='cnn_spccovt1cllnk cnn_spccovt1cll2']//h2//a";
+	    XPATH = "//source";
+	    resultSNode = root.evaluateXPath(XPATH);
+
+	    // process data if found any node
+	    if(resultSNode.length > 0) {
+	    	
+	    	if (isDebug) {
+	    		Log.e("gray", "MainActivity.java:isNeedUpdate, resultSNode.length:" + resultSNode.length);
+	    		for (int i = 0; i < resultSNode.length; i++) {
+	    			
+	    			TagNode resultNode = (TagNode)resultSNode[i];
+	    			resultS = resultNode.getText().toString();
+	    			Log.e("gray", "MainActivity.java:isNeedUpdate, " + resultS);
+	    			
+	    		}
+			}
+	    	
+	    	TagNode resultNode = (TagNode)resultSNode[0];
+	    	newestVideoSource = resultNode.getText().toString();
+	    	
+	    } else {
+	    	Log.e("gray", "MainActivity.java:isNeedUpdate, resultSNode.length <= 0, err!!");
+		}
+	    
+		// get last video source string
+		String lastVideosource = sharedPrefs.getString("lastVideosource", "");
+		if (newestVideoSource.equalsIgnoreCase(lastVideosource)) {
+			isNeedUpdate = false;
+		} else {
+			isNeedUpdate = true;
+			sharedPrefsEditor.putString("lastVideosource", newestVideoSource);
+		}
+		if (isDebug) {
+			Log.e("gray", "MainActivity.java: newestVideoSource: " + newestVideoSource);
+			Log.e("gray", "MainActivity.java: lastVideosource: " + lastVideosource);
+			Log.e("gray", "MainActivity.java: isNeedUpdate: " + isNeedUpdate);
+		}
+			
+    	sharedPrefsEditor.commit();
+    	
+		waitFlag = true;
+    }
+    
 	public void getCNNSTitle() throws Exception {
 	    
 		String resultS = "";
 		String matchString = "CNN Student News";
+		String lastVideosource = sharedPrefs.getString("lastVideosource", "");
 	    int arrayIndex = 0;
 	    Object[] resultSNode;
 	
@@ -478,40 +626,44 @@ public class MainActivity extends Activity {
 	    resultSNode = root.evaluateXPath(XPATH);
 
 	    // process data if found any node
-	    if(resultSNode.length > 0) {
-	    	
-	    	if (isDebug) {
-	    		Log.e("gray", "MainActivity.java:getCNNSTitle, resultSNode.length:" + resultSNode.length);
-			}
-	    	for (int i = 0; i < resultSNode.length; i++) {
-				
-	    		TagNode resultNode = (TagNode)resultSNode[i];
-	    		resultS = resultNode.getText().toString();
-	    		
-	    		if (resultS.regionMatches(0, matchString, 0, matchString.length())) {
-					
-	    			resultS = resultS.replace("CNN Student News -", "");
-	    			cnnListStringArray[arrayIndex] = resultS;
-	    			cnnScriptAddrStringArray[arrayIndex] = resultNode.getAttributeByName("href");
-	    			
-	    			sharedPrefsEditor.putString("cnnListString_"+arrayIndex, cnnListStringArray[arrayIndex]);
-	    			sharedPrefsEditor.putString("cnnScriptAddrString_"+arrayIndex, cnnScriptAddrStringArray[arrayIndex]);
-	    			if (isDebug) {
-	    				Log.e("gray", "MainActivity.java:getCNNSTitle, i:" + (i) + ", arrayIndex:" + arrayIndex + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+    	if(resultSNode.length > 0) {
+    		
+    		if (isDebug) {
+    			Log.e("gray", "MainActivity.java:getCNNSTitle, resultSNode.length:" + resultSNode.length);
+    		}
+    		for (int i = 0; i < resultSNode.length; i++) {
+    			
+    			TagNode resultNode = (TagNode)resultSNode[i];
+    			resultS = resultNode.getText().toString();
+    			
+    			if (resultS.regionMatches(0, matchString, 0, matchString.length())) {
+    				
+					if (lastVideosource.equalsIgnoreCase(resultS)) {
+						
+	    				resultS = resultS.replace("CNN Student News -", "");
+	    				cnnListStringArray[arrayIndex] = resultS;
+	    				cnnScriptAddrStringArray[arrayIndex] = resultNode.getAttributeByName("href");
+	    				
+	    				sharedPrefsEditor.putString("cnnListString_"+arrayIndex, cnnListStringArray[arrayIndex]);
+	    				sharedPrefsEditor.putString("cnnScriptAddrString_"+arrayIndex, cnnScriptAddrStringArray[arrayIndex]);
+	    				if (isDebug) {
+	    					Log.e("gray", "MainActivity.java:getCNNSTitle, i:" + (i) + ", arrayIndex:" + arrayIndex + ", getAttributeByName = " + resultNode.getAttributeByName("href"));
+	    				}
+	    				
+	    				arrayIndex++;
+					} else {
+						break;
 					}
-	    			
-	    			arrayIndex++;
-				} else {
-					if (isDebug) {
-						Log.e("gray", "MainActivity.java: string not match!!" );
-					}
-				}
-	    	}
-	    	
-	    } else {
-	    	Log.e("gray", "resultSNode.length <= 0, err!!");
-		}
-	    
+    			} else {
+    				if (isDebug) {
+    					Log.e("gray", "MainActivity.java: string not match!!" );
+    				}
+    			}
+    		}
+    		
+    	} else {
+    		Log.e("gray", "resultSNode.length <= 0, err!!");
+    	}
 	    
 	    // query XPath
 	    XPATH = "//div[@class='cnn_mtt1imghtitle']//span//a";
@@ -659,9 +811,15 @@ public class MainActivity extends Activity {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
         	}
         	showAlertDialog("Information", 
-        			"What's new in this version (1.24)?\n\n" +
-        			"fix crash issue on some devices.\n\n" +
-        			"Usage:\n\n" +
+        			"What's new in this version (1.25) ?\n\n" +
+        			"Support video background playing.\n\n" +
+        			"a. enabled when video is playing.\n" +
+        			"b. key play/pause to start/stop.\n" +
+        			"c. key previous/rewind to rewind.\n" +
+        			"d. key next/fast forward to stop background service.\n" +
+        			"e. back to foreground will also stop background service.\n\n" +
+        			"PS : Background service will also comsume battery, remember to use d. or e. to stop it.\n\n" +
+        			"Usage & Features:\n\n" +
         			"1. Quick translate : ( 3 method )\n" +
         			"a. By double click a word.\n" +
         			"some devices can't perform this method, try b or c; method b or c need to be enabled first at \"settings\";\n" +
@@ -676,13 +834,20 @@ public class MainActivity extends Activity {
         			"a. Click video or \"MENU\" key to pause/resume.\n" +
         			"b. Swipe(slide on video) left/right to rewind/fast forward.\n" +
         			"c. Swipe up/down to zoom out/in.\n\n" +
-        			"4. Script & video download status :\n" +
+        			"4. Script & video download :\n" +
+        			"The script will be downloaded automatically; " +
+        			"but video need to be enabled first at \"settings\".\n" +
         			"If the downloaded file exist at \"/sdcard/download\", the icon will be different obviously.\n" +
-        			"The script will be downloaded automatically;\n" +
-        			"To download video, need to enable first at \"settings\".\n" +
         			"You can perform offline jobs (without network) after downloading video & script files.\n\n" +
+        			"5. Playing video at background :\n" +
+        			"a. enabled when video is playing.\n" +
+        			"b. key play/pause to start/stop.\n" +
+        			"c. key previous/rewind to rewind.\n" +
+        			"d. key next/fast forward to stop background service.\n" +
+        			"e. back to foreground will also stop background service.\n" +
+        			"PS : Background service will also comsume battery, remember to use d. or e. to stop it.\n\n" +
         			"*********************\n" +
-        			"If you like this app or think it's useful, please help to rank it at Google Play, thanks~^^\n" +
+        			"If you like this app or think it's useful, please help to rank it at Google Play, thanks~^^~\n" +
         			"*********************\n"
         			);
             break;
@@ -733,6 +898,12 @@ public class MainActivity extends Activity {
 		if (adView != null) {
 			adView.destroy();
 		}
+		
+		if (componentName != null ) {
+			audioManager.unregisterMediaButtonEventReceiver(componentName);
+			componentName = null;
+		}
+		
 		super.onDestroy();
 	}
 

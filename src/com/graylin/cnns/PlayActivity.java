@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.AlertDialog;
@@ -50,7 +51,7 @@ import android.widget.TextView;
 
 public class PlayActivity extends Activity implements OnCompletionListener, OnPreparedListener{
 
-	public String cnnVideoPath = "";
+	public static String cnnVideoPath = "";
 	public String cnnVideoName = "";
 	public String cnnScriptPath = "";
 	public String cnnScriptContent = "";
@@ -70,8 +71,8 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	public String translatedText = "";
 	
 	// video variables
-	public boolean isVideoPlaying;
-	public int stopPosition;
+	public static boolean isVideoPlaying;
+	public static int stopPosition;
 	public boolean isVideoTouchMove;
 	public float currentX = 0, previousX = 0;
 	public float currentY = 0, previousY = 0;
@@ -82,6 +83,8 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	public int videoThresholdX;
 	public int videoThresholdY;
 	public boolean isVideoFileExit;
+	public Intent playVideoServiceIntent;
+	public static boolean isStopService;
 	
 	@SuppressWarnings("deprecation")
 	@Override
@@ -93,6 +96,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 //		mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
 		videoThresholdX = 5;
 		videoThresholdY = 50;
+		stopPosition = 0;
 		mVideoView.setOnCompletionListener(this);
 		mVideoView.setOnPreparedListener(this);
 		
@@ -610,6 +614,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		}
 	}
 	
+	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {  
         @Override  
         public void handleMessage(Message msg) {
@@ -809,14 +814,6 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	}
 	
 	@Override
-	protected void onDestroy() {
-		if (MainActivity.isDebug) {
-			Log.e("gray", "PlayActivity.java: onDestroy");
-		}
-		super.onDestroy();
-	}
-
-	@Override
 	public void onCompletion(MediaPlayer mp) {
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: onCompletion");
@@ -908,12 +905,32 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		}
         stopPosition = mVideoView.getCurrentPosition(); //stopPosition is an int
         isVideoPlaying = mVideoView.isPlaying();
+        
+        if (isVideoPlaying) {
+        	// if video is playing & app goes to background, then start background service
+        	playVideoServiceIntent = new Intent(this, PlayVideoService.class);
+        	startService(playVideoServiceIntent);
+        	isStopService = false;
+		}
+        
         mVideoView.pause();
 	}
 	
 	@SuppressWarnings("deprecation")
 	protected void onResume() {
 		super.onResume();
+		
+		// stop background service
+		if (playVideoServiceIntent != null) {
+			isStopService = true;
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			stopService(playVideoServiceIntent);
+			playVideoServiceIntent = null;
+		}
 		
 		WindowManager wm = (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE);
 		android.view.Display display = wm.getDefaultDisplay();
@@ -949,6 +966,18 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		} else {
 			mVideoView.resume();
 		}
+	}
+	
+	@Override
+	protected void onDestroy() {
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java: onDestroy");
+		}
+		
+		// set stop service flag anyway
+		isStopService = true;
+		
+		super.onDestroy();
 	}
 	
 	@Override
