@@ -87,6 +87,7 @@ public class MainActivity extends Activity {
 	public static boolean isEnableDownload;
 	public static int textSize;
 	public static int scriptTheme;
+	public static int autoDelete;
 	public static String translateLanguage;
 	public static boolean isEnableLongPressTranslate;
 	public static boolean isEnableSoftButtonTranslate;
@@ -157,10 +158,11 @@ public class MainActivity extends Activity {
 			}
 		}
         
-        scriptTheme = Integer.valueOf(sharedPrefs.getString("pref_script_theme", "0"));
+        scriptTheme = Integer.valueOf( sharedPrefs.getString("pref_script_theme", "0") );
         translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
         isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
         isEnableSoftButtonTranslate = sharedPrefs.getBoolean("pref_soft_button_translate", false);
+        autoDelete = Integer.valueOf( sharedPrefs.getString("pref_auto_delete_file", "0") );
 		
         // check if need to update, set isNeedUpdate = true / false
         // if there is new video, then update
@@ -207,14 +209,19 @@ public class MainActivity extends Activity {
         			} 
         		}).start();
         		
-        		// wait variable "isNeedUpdate" to be set
-        		while (!waitFlag) {
+        		// wait variable "isNeedUpdate" to be set or timeout
+        		int tempCounter = 0;
+        		while ( !(waitFlag || tempCounter > 35) ) {	// timeout 7s
         			try {
         				Thread.sleep(200);
+        				tempCounter++;
         			} catch (InterruptedException e) {
         				e.printStackTrace();
         			}
         		}
+        		if (isDebug) {
+        			Log.e("gray", "MainActivity.java:onCreate, tempCounter: " + tempCounter);
+				}
 			}
         }
 		
@@ -241,8 +248,22 @@ public class MainActivity extends Activity {
 		
 		if (isTooLongNoUpdate) {
 			isNeedUpdate = true;
+
+			// manage file (auto delete)
+			if ( autoDelete != 0 ) {
+				
+				new Thread(new Runnable() 
+				{ 
+					@Override
+					public void run() 
+					{ 
+						deleteCNNSFiles(autoDelete);
+					} 
+				}).start();
+				showListView();
+			} 
 		}	
-			
+		
 		// for debug, force update
 		if (isDebug) {
 			isNeedUpdate = true;
@@ -324,12 +345,13 @@ public class MainActivity extends Activity {
 		
         switch (requestCode) {
 		case 0:
-			// back from settings page, set settings value to variable
+			// back to main page from settings page, set settings value to variable
 			if (isDebug) {
 				Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getBoolean("pref_download", false) );
 				Log.e("gray", "PlayActivity.java: pref_textSize :" + sharedPrefs.getString("pref_textSize", "18") );
 				Log.e("gray", "PlayActivity.java: pref_script_theme :" + sharedPrefs.getString("pref_script_theme", "0") );
 				Log.e("gray", "PlayActivity.java: pref_translate_language :" + sharedPrefs.getString("pref_translat_language", "zh-TW") );
+				Log.e("gray", "PlayActivity.java: pref_auto_delete_file :" + sharedPrefs.getString("pref_auto_delete_file", "0") );
 			}
 			
 			isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
@@ -345,13 +367,22 @@ public class MainActivity extends Activity {
 	        	textSize = 50;
 	        } 
 			
-			scriptTheme = Integer.valueOf(sharedPrefs.getString("pref_script_theme", "0"));
-
+	        scriptTheme = Integer.valueOf( sharedPrefs.getString("pref_script_theme", "0") );
 			translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
-					
 			isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
-			
 			isEnableSoftButtonTranslate = sharedPrefs.getBoolean("pref_soft_button_translate", false);
+			autoDelete = Integer.valueOf( sharedPrefs.getString("pref_auto_delete_file", "0") );
+			
+			if (autoDelete != 0) {
+
+				new Thread(new Runnable() {
+					@Override
+					public void run() {
+						deleteCNNSFiles(autoDelete);
+						handler.sendEmptyMessage(1);
+					}
+				}).start();
+			}
 			
 			break;
 			
@@ -522,13 +553,24 @@ public class MainActivity extends Activity {
         @Override  
         public void handleMessage(Message msg) {
         	
-			try {
-				mProgressDialog.dismiss();
-				mProgressDialog = null;
-				showListView();
-			} catch (Exception e) {
-				// nothing
-			}
+           	switch (msg.what) {
+    			case 0:
+    				
+    				try {
+    					mProgressDialog.dismiss();
+    					mProgressDialog = null;
+    					showListView();
+    				} catch (Exception e) {
+    					// nothing
+    				}
+    				
+    				break;
+
+    			case 1:
+    				showListView();
+    				break;
+    					
+           	}
         }  
     };  
 	
@@ -552,7 +594,6 @@ public class MainActivity extends Activity {
 	    TagNode root = htmlCleaner.clean(url);
 
 	    // query XPath
-//	    XPATH = "//div[@class='cnn_spccovt1cllnk cnn_spccovt1cll2']//h2//a";
 	    XPATH = "//source";
 	    resultSNode = root.evaluateXPath(XPATH);
 
@@ -566,7 +607,6 @@ public class MainActivity extends Activity {
 	    			TagNode resultNode = (TagNode)resultSNode[i];
 	    			resultS = resultNode.getText().toString();
 	    			Log.e("gray", "MainActivity.java:isNeedUpdate, " + resultS);
-	    			
 	    		}
 			}
 	    	
@@ -780,6 +820,64 @@ public class MainActivity extends Activity {
         dialog.show();
 	}
     
+	public void deleteCNNSFiles(int deleteParameter){
+		
+		if (isDebug) {
+			Log.e("gray", "MainActivity.java:deleteCNNSFiles, " + "");
+		}
+		
+		// Directory path
+		String path = Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS;
+		File folder = new File(path);
+		File[] listOfFiles = folder.listFiles();
+		int survivalDay = 0;
+		
+		switch (deleteParameter) {
+			case 1:
+				survivalDay = 5;
+				break;
+			case 2:
+				survivalDay = 10;
+				break;
+			case 3:
+				survivalDay = 15;
+				break;
+			case 4:
+				survivalDay = 20;
+				break;
+			case 5:
+				survivalDay = 25;
+				break;
+			case 6:
+				survivalDay = 30;
+				break;
+		}
+
+		for (int i = 0; i < listOfFiles.length; i++) {
+
+			if (listOfFiles[i].isFile()) {
+				
+				Date currentDate = new Date();
+				long lCurrentDate = currentDate.getTime();
+				if (listOfFiles[i].getName().contains(".cnn.m4v")) {
+					
+					Date lastModDate = new Date(listOfFiles[i].lastModified());
+					long diff = lCurrentDate - lastModDate.getTime();
+					
+					if (isDebug) {
+						Log.e("gray", "MainActivity.java:manageCNNSFiles, currentDate : " + currentDate);
+						Log.e("gray", "MainActivity.java:manageCNNSFiles, file : " + listOfFiles[i].getName() + " : " + lastModDate.toString());
+						Log.e("gray", "MainActivity.java:manageCNNSFiles, Difference is : " + (diff/(1000*60*60*24)) + " days.");
+					}
+
+					if ((diff/(1000*60*60*24)) > survivalDay ) {
+						listOfFiles[i].delete();
+					}
+				}
+			}
+		}
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 
@@ -811,14 +909,10 @@ public class MainActivity extends Activity {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
         	}
         	showAlertDialog("Information", 
-        			"What's new in this version (1.25) ?\n\n" +
-        			"Support video background playing.\n\n" +
-        			"a. enabled when video is playing.\n" +
-        			"b. key play/pause to start/stop.\n" +
-        			"c. key previous/rewind to rewind.\n" +
-        			"d. key next/fast forward to stop background service.\n" +
-        			"e. back to foreground will also stop background service.\n\n" +
-        			"PS : Background service will also comsume battery, remember to use d. or e. to stop it.\n\n" +
+        			"What's new in this version (1.26) ?\n\n" +
+        			"Auto Delete Related Files :\n" +
+        			"Auto delete if modified timestamp of compared file is > your setting value; to enable this feature at \"settings\" page, " +
+        			"default is disable.\n\n" +
         			"Usage & Features:\n\n" +
         			"1. Quick translate : ( 3 method )\n" +
         			"a. By double click a word.\n" +
@@ -846,6 +940,9 @@ public class MainActivity extends Activity {
         			"d. key next/fast forward to stop background service.\n" +
         			"e. back to foreground will also stop background service.\n" +
         			"PS : Background service will also comsume battery, remember to use d. or e. to stop it.\n\n" +
+        			"6. Auto delete related file :\n" +
+        			"Auto delete if modified timestamp of compared file is > your setting value; to enable this feature at \"settings\" page, " +
+        			"default is disable.\n\n" +
         			"*********************\n" +
         			"If you like this app or think it's useful, please help to rank it at Google Play, thanks~^^~\n" +
         			"*********************\n"

@@ -91,6 +91,7 @@ public class SettingsActivity extends PreferenceActivity {
 		bindPreferenceSummaryToValue(findPreference("pref_textSize"));
 		bindPreferenceSummaryToValue(findPreference("pref_translate_language"));
 		bindPreferenceSummaryToValue(findPreference("pref_script_theme"));
+		bindPreferenceSummaryToValue(findPreference("pref_auto_delete_file"));
 //		bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
 //		bindPreferenceSummaryToValue(findPreference("sync_frequency"));
 	}
@@ -252,6 +253,7 @@ public class SettingsActivity extends PreferenceActivity {
 			bindPreferenceSummaryToValue(findPreference("pref_textSize"));
 			bindPreferenceSummaryToValue(findPreference("pref_translate_language"));
 			bindPreferenceSummaryToValue(findPreference("pref_script_theme"));
+			bindPreferenceSummaryToValue(findPreference("pref_auto_delete_file"));
 		}
 	}
 
