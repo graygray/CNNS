@@ -147,7 +147,7 @@ public class MainActivity extends Activity {
 		} else {
 			
 			showAlertDialog("First Use Message", 
-					"How to use this app please see \"Information\" page; " +
+					"How to use this app please have a look at \"Information\" page; " +
 					"errors, bugs or questions please check \"Q & A\" page first.\n\n"
 					);
 			
@@ -853,25 +853,28 @@ public class MainActivity extends Activity {
 				break;
 		}
 
-		for (int i = 0; i < listOfFiles.length; i++) {
-
-			if (listOfFiles[i].isFile()) {
+		if (listOfFiles != null) {
+			
+			for (int i = 0; i < listOfFiles.length; i++) {
 				
-				Date currentDate = new Date();
-				long lCurrentDate = currentDate.getTime();
-				if (listOfFiles[i].getName().contains(".cnn.m4v")) {
+				if (listOfFiles[i].isFile()) {
 					
-					Date lastModDate = new Date(listOfFiles[i].lastModified());
-					long diff = lCurrentDate - lastModDate.getTime();
-					
-					if (isDebug) {
-						Log.e("gray", "MainActivity.java:manageCNNSFiles, currentDate : " + currentDate);
-						Log.e("gray", "MainActivity.java:manageCNNSFiles, file : " + listOfFiles[i].getName() + " : " + lastModDate.toString());
-						Log.e("gray", "MainActivity.java:manageCNNSFiles, Difference is : " + (diff/(1000*60*60*24)) + " days.");
-					}
-
-					if ((diff/(1000*60*60*24)) > survivalDay ) {
-						listOfFiles[i].delete();
+					Date currentDate = new Date();
+					long lCurrentDate = currentDate.getTime();
+					if (listOfFiles[i].getName().contains(".cnn.m4v")) {
+						
+						Date lastModDate = new Date(listOfFiles[i].lastModified());
+						long diff = lCurrentDate - lastModDate.getTime();
+						
+						if (isDebug) {
+							Log.e("gray", "MainActivity.java:manageCNNSFiles, currentDate : " + currentDate);
+							Log.e("gray", "MainActivity.java:manageCNNSFiles, file : " + listOfFiles[i].getName() + " : " + lastModDate.toString());
+							Log.e("gray", "MainActivity.java:manageCNNSFiles, Difference is : " + (diff/(1000*60*60*24)) + " days.");
+						}
+						
+						if ((diff/(1000*60*60*24)) > survivalDay ) {
+							listOfFiles[i].delete();
+						}
 					}
 				}
 			}
@@ -909,10 +912,8 @@ public class MainActivity extends Activity {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
         	}
         	showAlertDialog("Information", 
-        			"What's new in this version (1.26) ?\n\n" +
-        			"Auto Delete Related Files :\n" +
-        			"Auto delete if modified timestamp of compared file is > your setting value; to enable this feature at \"settings\" page, " +
-        			"default is disable.\n\n" +
+        			"What's new in this version (1.28) ?\n\n" +
+        			"some bug fix.\n\n" +
         			"Usage & Features:\n\n" +
         			"1. Quick translate : ( 3 method )\n" +
         			"a. By double click a word.\n" +
@@ -941,7 +942,7 @@ public class MainActivity extends Activity {
         			"e. back to foreground will also stop background service.\n" +
         			"PS : Background service will also comsume battery, remember to use d. or e. to stop it.\n\n" +
         			"6. Auto delete related file :\n" +
-        			"Auto delete if modified timestamp of compared file is > your setting value; to enable this feature at \"settings\" page, " +
+        			"Auto delete if modified timestamp of compared file > your setting value; to enable this feature at \"settings\" page, " +
         			"default is disable.\n\n" +
         			"*********************\n" +
         			"If you like this app or think it's useful, please help to rank it at Google Play, thanks~^^~\n" +
@@ -961,13 +962,11 @@ public class MainActivity extends Activity {
         			"http://edition.cnn.com/studentnews/\n" +
         			"and it's archive here:\n" +
         			"http://edition.cnn.com/US/studentnews/quick.guide/archive/\n\n" +
-        			"2. Newest video not available or errors happen?\n" +
-        			"We get list from here :\n" +
-        			"http://edition.cnn.com/US/studentnews/quick.guide/archive/\n" +
-        			"But get video from here :\n" +
+        			"2. When will the list update?\n" +
+        			"We get video from here :\n" +
         			"http://rss.cnn.com/services/podcasting/studentnews/rss.xml\n" +
-        			"Because these two are not synchronized, so...\n" +
-        			"You can just try it latter.\n\n" +
+        			"When there is a new video here, we will update the list.\n" +
+        			"If video is already on website, but the App's list still not be updated, please try it an hour later.\n\n" +
         			"3. Any suggestion or bug just:\n" +
         			"mail to : llkkqq@gmail.com\n"
         			);

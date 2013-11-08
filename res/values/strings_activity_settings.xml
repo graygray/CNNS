@@ -39,12 +39,24 @@
     <string-array name="pref_script_theme">
        	<item>Black  -  White</item>
        	<item>White  -  Black</item>
-       	<item>White  -  Purple</item>
-       	<item>Black  -  Yellow</item>
-       	<item>Green  -  Black</item>
-       	<item>White  -  Green</item>
-       	<item>White  -  Blue</item>
+       	<item>Red - White</item>
        	<item>White  -  Red</item>
+       	<item>Orange  -  Black</item>
+       	<item>White  -  Orange</item>
+       	<item>Black  -  Orange</item>
+       	<item>Black  -  Yellow</item>
+       	<item>Green - White</item>
+       	<item>Green - Black</item>
+       	<item>White - Green</item>
+       	<item>Black - Green</item>
+       	<item>LightBlue  -  White</item>
+       	<item>White - LightBlue</item>
+       	<item>Black - LightBlue</item>
+       	<item>White  -  Blue</item>
+       	<item>Pink  -  White</item>
+       	<item>LightPurple - White</item>
+       	<item>White  -  LightPurple</item>
+       	<item>White - Purple</item>
     </string-array>
     
     <string-array name="pref_script_theme_values">
@@ -56,6 +68,18 @@
        	<item>5</item>
        	<item>6</item>
        	<item>7</item>
+       	<item>8</item>
+       	<item>9</item>
+       	<item>10</item>
+       	<item>11</item>
+       	<item>12</item>
+       	<item>13</item>
+       	<item>14</item>
+       	<item>15</item>
+       	<item>16</item>
+       	<item>17</item>
+       	<item>18</item>
+       	<item>19</item>
     </string-array>
     
 	<string-array name="pref_auto_delete_file">

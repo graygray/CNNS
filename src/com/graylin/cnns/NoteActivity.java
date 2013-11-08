@@ -55,41 +55,89 @@ public class NoteActivity extends Activity {
 		
 		mTextView = (TextView) findViewById(R.id.tv_noteContent);
 		
-		mTextView.setText(s);
+		mTextView.setText(s+"\n\n");
 		mTextView.setTextSize(MainActivity.textSize);
 		
 		switch (MainActivity.scriptTheme) {
-		case 0:
+		case 0:	// Black  -  White
 			mTextView.setTextColor(0xff000000);
 			mTextView.setBackgroundColor(0xffffffff);
 			break;
-		case 1:
+		case 1:	// White  -  Black
 			mTextView.setTextColor(0xffffffff);
 			mTextView.setBackgroundColor(0xff000000);
 			break;
-		case 2:
-			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xff4D0D2A);
+		case 2: // Red - White
+			mTextView.setTextColor(0xffDC143C);
+			mTextView.setBackgroundColor(0xffffffff);
 			break;
-		case 3:
+		case 3: // White  -  Red
+			mTextView.setTextColor(0xffffffff);
+			mTextView.setBackgroundColor(0xffA8050A);
+			break;
+		case 4: // Orange  -  Black
+			mTextView.setTextColor(0xFFFFA500);
+			mTextView.setBackgroundColor(0xff000000);
+			break;
+		case 5: // White  -  Orange
+			mTextView.setTextColor(0xffffffff);
+			mTextView.setBackgroundColor(0xFFFFA500);
+			break;
+		case 6: // Black  -  Orange
+			mTextView.setTextColor(0xff000000);
+			mTextView.setBackgroundColor(0xFFFFA500);
+			break;
+		case 7: // Black  -  Yellow
 			mTextView.setTextColor(0xff000000);
 			mTextView.setBackgroundColor(0xffFFF396);
 			break;
-		case 4:
+		case 8: // Green - White
+			mTextView.setTextColor(0xff00C22E);
+			mTextView.setBackgroundColor(0xffffffff);
+			break;
+		case 9: // Green - Black
 			mTextView.setTextColor(0xff00C22E);
 			mTextView.setBackgroundColor(0xff000000);
 			break;
-		case 5:
+		case 10: // White - Green
 			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xff008312);
+			mTextView.setBackgroundColor(0xff00C22E);
 			break;
-		case 6:
+		case 11: // Black - Green
+			mTextView.setTextColor(0xff000000);
+			mTextView.setBackgroundColor(0xff00C22E);
+			break;
+		case 12: // LightBlue  -  White
+			mTextView.setTextColor(0xFF4169E1);
+			mTextView.setBackgroundColor(0xffffffff);
+			break;
+		case 13: // White - LightBlue
+			mTextView.setTextColor(0xffffffff);
+			mTextView.setBackgroundColor(0xFF4169E1);
+			break;
+		case 14: // Black - LightBlue
+			mTextView.setTextColor(0xff000000);
+			mTextView.setBackgroundColor(0xFF4169E1);
+			break;
+		case 15: // White  -  Blue
 			mTextView.setTextColor(0xffffffff);
 			mTextView.setBackgroundColor(0xff1038AA);
 			break;
-		case 7:
+		case 16: // Pink  -  White
+			mTextView.setTextColor(0xFFFF1493);
+			mTextView.setBackgroundColor(0xffffffff);
+			break;
+		case 17: // LightPurple - White
+			mTextView.setTextColor(0xffC71585);
+			mTextView.setBackgroundColor(0xffffffff);
+			break;
+		case 18: // White - LightPurple
 			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xffA8050A);
+			mTextView.setBackgroundColor(0xffC71585);
+			break;
+		case 19: // White  -  Purple
+			mTextView.setTextColor(0xffffffff);
+			mTextView.setBackgroundColor(0xff4D0D2A);
 			break;
 		default:
 			break;
