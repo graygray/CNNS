@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+
 import org.htmlcleaner.CleanerProperties;
 import org.htmlcleaner.HtmlCleaner;
 import org.htmlcleaner.TagNode;
@@ -32,14 +33,17 @@ import android.app.DownloadManager;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Configuration;
 import android.graphics.Point;
 import android.support.v4.view.MotionEventCompat;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
-import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnTouchListener;
@@ -47,6 +51,8 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.MediaController;
 import android.widget.RelativeLayout;
+import android.widget.EditText;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 public class PlayActivity extends Activity implements OnCompletionListener, OnPreparedListener{
@@ -60,7 +66,8 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
     
 	public MyVideoView mVideoView;
 //	public VideoView mVideoView;
-	public TextView mTextView;
+	public EditText mEditText;
+	public TextView mTV_videoTime;
 	public ProgressDialog mProgressDialogScript;
 	public ProgressDialog mProgressDialogVideo;
 	public ProgressDialog mProgressDialogTranslate;
@@ -69,6 +76,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	public CharSequence srcText = "";
 	public String srcString = "";
 	public String translatedText = "";
+	public static int reTranstaleCount;
 	
 	// video variables
 	public static boolean isVideoPlaying;
@@ -85,6 +93,12 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	public boolean isVideoFileExit;
 	public Intent playVideoServiceIntent;
 	public static boolean isStopService;
+	public static boolean flagOnPause;
+	public static boolean isRotate;			// manual rotate
+	public static boolean isRotate2;		// auto rotate
+	public boolean clickZoneRight;
+	public boolean clickZoneCenter;
+	public boolean clickZoneLeft;
 	
 	@SuppressWarnings("deprecation")
 	@Override
@@ -96,7 +110,22 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 //		mVideoView = (VideoView) findViewById(R.id.videoView_CNNS);
 		videoThresholdX = 5;
 		videoThresholdY = 50;
-		stopPosition = 0;
+		
+		mTV_videoTime = (TextView) findViewById(R.id.video_time);
+		
+        if (!isRotate && getResources().getConfiguration().orientation != MainActivity.originOrientation) {
+			// auto rotate
+        	isRotate2 = true;
+        	MainActivity.originOrientation = getResources().getConfiguration().orientation;
+		} 
+		if (isRotate || isRotate2) {
+			isRotate = false;
+			isRotate2 = false;
+		} else {
+			stopPosition = 0;
+		}
+		videoWidth = 0;
+		videoHeight = 0;
 		mVideoView.setOnCompletionListener(this);
 		mVideoView.setOnPreparedListener(this);
 		
@@ -227,21 +256,22 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			}
 		}
 		
-		mTextView = (TextView) findViewById(R.id.tv_webContent);
-		registerForContextMenu(mTextView);
+		mEditText = (EditText) findViewById(R.id.tv_webContent);
+		registerForContextMenu(mEditText);
+		mEditText.setKeyListener(null);
 		
-		mTextView.setOnClickListener(new View.OnClickListener(){
+		mEditText.setOnClickListener(new View.OnClickListener(){
 		    public void onClick(View v){
 		    	
 		    	// double click, translate function
-		    	if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
+		    	if (mEditText.getSelectionStart() != mEditText.getSelectionEnd()) {
 		    		
-		    		srcText = mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
+		    		srcText = mEditText.getText().subSequence(mEditText.getSelectionStart(), mEditText.getSelectionEnd());
 					if (isNetworkAvailable()){
 						
 						if (MainActivity.isDebug) {
-							Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
-							Log.e("gray", "PlayActivity.java: TextView.onClick : " + srcText);
+							Log.e("gray", "PlayActivity.java: EditText.onClick : " + mEditText.getSelectionStart() + "--"+ mEditText.getSelectionEnd());
+							Log.e("gray", "PlayActivity.java: EditText.onClick : " + srcText);
 						}
 						
 						showProcessDialog(2, "Please Wait...", "Translate...");
@@ -252,6 +282,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 							public void run() 
 							{ 
 								try {
+									reTranstaleCount = 0;
 									getTranslateString(srcText);
 									handler.sendEmptyMessage(1);
 									if (MainActivity.isDebug) {
@@ -282,13 +313,13 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		    }
 		});
 		
-		mTextView.setOnLongClickListener(new View.OnLongClickListener() {
+		mEditText.setOnLongClickListener(new View.OnLongClickListener() {
 			
 			@Override
 			public boolean onLongClick(View v) {
 				if (MainActivity.isDebug) {
-					Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
-					Log.e("gray", "PlayActivity.java: TextView.onLongClick : " + mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd()));
+					Log.e("gray", "PlayActivity.java: EditText.onLongClick : " + mEditText.getSelectionStart() + "--"+ mEditText.getSelectionEnd());
+					Log.e("gray", "PlayActivity.java: EditText.onLongClick : " + mEditText.getText().subSequence(mEditText.getSelectionStart(), mEditText.getSelectionEnd()));
 				}
 				
 				return false;
@@ -312,14 +343,14 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 				if (MainActivity.isEnableSoftButtonTranslate) {
 					
 		    		//translate
-		    		if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
+		    		if (mEditText.getSelectionStart() != mEditText.getSelectionEnd()) {
 		    			
-		    			srcText = mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
+		    			srcText = mEditText.getText().subSequence(mEditText.getSelectionStart(), mEditText.getSelectionEnd());
 		    			if (isNetworkAvailable()){
 		    				
 		    				if (MainActivity.isDebug) {
-		    					Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
-		    					Log.e("gray", "PlayActivity.java: TextView.onClick : " + srcText);
+		    					Log.e("gray", "PlayActivity.java: EditText.onClick : " + mEditText.getSelectionStart() + "--"+ mEditText.getSelectionEnd());
+		    					Log.e("gray", "PlayActivity.java: EditText.onClick : " + srcText);
 		    				}
 		    				
 		    				showProcessDialog(2, "Please Wait...", "Translate...");
@@ -330,6 +361,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		    					public void run() 
 		    					{ 
 		    						try {
+		    							reTranstaleCount = 0;
 		    							getTranslateString(srcText);
 		    							handler.sendEmptyMessage(1);
 		    							if (MainActivity.isDebug) {
@@ -388,7 +420,9 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		// mVideoView.setVideoURI(Uri.parse("android.resource://ss.ss/"+R.raw.main));
 
 		// control bar
-		mVideoView.setMediaController(new MediaController(this));
+		if (MainActivity.isVideoControlBar) {
+			mVideoView.setMediaController(new MediaController(this));
+		}
 		// mVideoView.requestFocus();
 		// start play
 		mVideoView.start();
@@ -401,6 +435,12 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 				}
 		    	int action = MotionEventCompat.getActionMasked(event);
 		    	
+		    	// show video timestamp
+		    	if (!MainActivity.isVideoControlBar) {
+		    		mTV_videoTime.setVisibility(View.VISIBLE);
+		    		mTV_videoTime.setText(milliSecondsToTimer(mVideoView.getCurrentPosition()));
+		    	}
+            	
 		        switch(action) {
 		            case (MotionEvent.ACTION_DOWN) :
 		            	if (MainActivity.isDebug) {
@@ -408,6 +448,30 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		            	}
 		            	previousX = event.getRawX();
 		            	previousY = event.getRawY();
+		            	
+		            	if ( previousX <= (videoWidth/6) ) {
+		            		if (MainActivity.isDebug) {
+								Log.e("gray", "PlayActivity.java:playVideo, " + "Left");
+							}
+		            		clickZoneRight = false;
+		            		clickZoneCenter = false;
+		            		clickZoneLeft = true;
+						} else if ( previousX > (videoWidth/6) && previousX < (videoWidth*5/6) ) {
+							if (MainActivity.isDebug) {
+								Log.e("gray", "PlayActivity.java:playVideo, " + "Center");
+							}
+							clickZoneRight = false;
+		            		clickZoneCenter = true;
+		            		clickZoneLeft = false;
+						} else {
+							if (MainActivity.isDebug) {
+								Log.e("gray", "PlayActivity.java:playVideo, " + "Right");
+							}
+							clickZoneRight = true;
+		            		clickZoneCenter = false;
+		            		clickZoneLeft = false;
+						}
+		            	
 		                return true;
 		            case (MotionEvent.ACTION_MOVE) :
 		            	if (MainActivity.isDebug) {
@@ -415,13 +479,14 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		            	}
 		            	currentX = event.getRawX();
 		            	currentY = event.getRawY();
+		            	
 		            	if (currentX - previousX > videoThresholdX) {
 							// move to right
 		            		if (MainActivity.isDebug) {
 		            			Log.e("gray", "PlayActivity.java: playVideo , move to right.");
 		            		}
-		            		stopPosition = mVideoView.getCurrentPosition(); //stopPosition is an int
-		            		mVideoView.seekTo(stopPosition + 2000);
+		            		stopPosition = mVideoView.getCurrentPosition();
+		            		mVideoView.seekTo(stopPosition + MainActivity.swipeTime*1000);
 		            		previousX = currentX;
 		            		isVideoTouchMove = true;
 						} else if (currentX - previousX < -videoThresholdX) {
@@ -429,8 +494,8 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 							if (MainActivity.isDebug) {
 								Log.e("gray", "PlayActivity.java: playVideo , move to left.");
 							}
-							stopPosition = mVideoView.getCurrentPosition(); //stopPosition is an int
-							mVideoView.seekTo(stopPosition - 2000);
+							stopPosition = mVideoView.getCurrentPosition();
+							mVideoView.seekTo(stopPosition - MainActivity.swipeTime*1000);
 							previousX = currentX;
 							isVideoTouchMove = true;
 							
@@ -474,15 +539,36 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			            // reset variable
 			            currentX = 0;
 			            currentY = 0;
-			            previousX = 0; 
-			            previousY = 0; 
-
+			            previousX = 0;
+			            previousY = 0;
+			            
+			            if (!MainActivity.isVideoControlBar) {
+			            	mTV_videoTime.setVisibility(View.GONE);
+			            }
+			            
 			            if (!isVideoTouchMove) {
-			            	if (mVideoView.isPlaying()) {
-			            		mVideoView.pause();
-			            	} else {
-			            		mVideoView.start();
-			            	}
+			            	if (clickZoneLeft) {
+			            		// click at video left
+			            		stopPosition = mVideoView.getCurrentPosition();
+								mVideoView.seekTo(stopPosition - MainActivity.swipeTime*1000);
+							} else if (clickZoneCenter) {
+								// click at video center
+								if (mVideoView.isPlaying()) {
+									mVideoView.pause();
+								} else {
+									if(!flagOnPause){
+										stopPosition = mVideoView.getCurrentPosition();
+									}
+									flagOnPause = false;
+									mVideoView.seekTo(stopPosition);
+									mVideoView.start();
+								}
+							} else {
+								// click at video right
+								stopPosition = mVideoView.getCurrentPosition();
+			            		mVideoView.seekTo(stopPosition + MainActivity.swipeTime*1000);
+							}
+			            	
 				            return false;
 						} else {
 							isVideoTouchMove = false;
@@ -517,8 +603,15 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		}
 		
 		boolean isSentance = false;
+		boolean noResultFlag = false;
+		
+		// ignore source text's length <= 1
+		if (srcCS.length() <= 1) {
+			return;
+		}
 		
 		srcString = srcCS.toString();
+//		srcString = srcString.toLowerCase(Locale.US);
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java:getTranslateString, srcString.length()" + srcString.length());
 			Log.e("gray", "PlayActivity.java:getTranslateString, srcString.indexOf(\" \")" + srcString.indexOf(" "));
@@ -554,6 +647,17 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			XPATH = "//div[@class='translateTxt']";
 		} else if (MainActivity.translateLanguage.equalsIgnoreCase("es")) {
 			XPATH = "//div[@id='tabr1']";
+		} else if (MainActivity.translateLanguage.equalsIgnoreCase("eng")) {
+			queryURL = "http://www.merriam-webster.com/dictionary/" + srcString;
+			XPATH = "//div[@class='ld_on_collegiate']//p";
+			translatedText = "\n" + translatedText;
+		} else if (MainActivity.translateLanguage.equalsIgnoreCase("zh-TW")) {
+			queryURL = "http://dict.dreye.com/ews/dict.php?w=" + srcString;
+			XPATH = "//div[@class='dict_cont']//div";
+			translatedText = "\n" + translatedText;
+//		} else if (MainActivity.translateLanguage.equalsIgnoreCase("zh-CN")) {
+//			queryURL = "http://dict.youdao.com/search?q=" + srcString;
+//			XPATH = "//p[@class='collapse-content']";
 		} else {
 			XPATH = "//div[@class='definition']";
 		}
@@ -597,20 +701,30 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			}
 	    	
 	    } else {
+	    	// not found, try -s at end of word
 			Log.e("gray", "PlayActivity.java: " + "statsNode.length < 0");
+			noResultFlag = true;
 		}
 	    
-	    // save translate word to note
-		FileWriter fw;
-		try {
-			fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".cnnsNote.txt", true);
-			BufferedWriter bw = new BufferedWriter(fw);
-			translatedText = translatedText.replaceAll("\n\n", "\n");
-			bw.write(srcCS + translatedText + "\n");
-			bw.close();
-		} catch (IOException e) {
-			Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
-			e.printStackTrace();
+	    if (noResultFlag && (reTranstaleCount<2) ) {
+			// search again with srcString - end s
+	    	reTranstaleCount++;
+	    	srcString = srcString.substring(0, srcString.length()-1);
+	    	Log.e("gray", "PlayActivity.java:getTranslateString, srcString:" + srcString);
+	    	getTranslateString(srcString);
+		} else {
+			// save translate word to note
+			FileWriter fw;
+			try {
+				fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".cnnsNote.txt", true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				translatedText = translatedText.replaceAll("\n\n", "\n");
+				bw.write(srcText + translatedText + "\n");
+				bw.close();
+			} catch (IOException e) {
+				Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -704,6 +818,9 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	    props.setOmitComments(true);
 	    
 	    // create URL object
+	    
+	    Log.e("gray", "PlayActivity.java:getScriptContent, cnnScriptPath:" + cnnScriptPath.toString());
+	    
 	    URL url = new URL(cnnScriptPath);
 	    // get HTML page root node
 	    TagNode root = htmlCleaner.clean(url);
@@ -766,95 +883,95 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	
 	public void setResultText(String s){
 		
-		mTextView = (TextView) findViewById(R.id.tv_webContent);
+		mEditText = (EditText) findViewById(R.id.tv_webContent);
 		
 		s = s.replaceAll("  ", "\n\n");
 		s = s.replaceAll("\n\n\n\n\n", "\n");
 		s = s.replaceAll("\n\n\n\n", "\n");
 //		s = s.replaceAll("\n\n\n", "\n");
-		mTextView.setText(s);
-		mTextView.setTextSize(MainActivity.textSize);
+		mEditText.setText(s);
+		mEditText.setTextSize(MainActivity.textSize);
 		
 		switch (MainActivity.scriptTheme) {
 		case 0:	// Black  -  White
-			mTextView.setTextColor(0xff000000);
-			mTextView.setBackgroundColor(0xffffffff);
+			mEditText.setTextColor(0xff000000);
+			mEditText.setBackgroundColor(0xffffffff);
 			break;
 		case 1:	// White  -  Black
-			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xff000000);
+			mEditText.setTextColor(0xffffffff);
+			mEditText.setBackgroundColor(0xff000000);
 			break;
 		case 2: // Red - White
-			mTextView.setTextColor(0xffDC143C);
-			mTextView.setBackgroundColor(0xffffffff);
+			mEditText.setTextColor(0xffDC143C);
+			mEditText.setBackgroundColor(0xffffffff);
 			break;
 		case 3: // White  -  Red
-			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xffA8050A);
+			mEditText.setTextColor(0xffffffff);
+			mEditText.setBackgroundColor(0xffA8050A);
 			break;
 		case 4: // Orange  -  Black
-			mTextView.setTextColor(0xFFFFA500);
-			mTextView.setBackgroundColor(0xff000000);
+			mEditText.setTextColor(0xFFFFA500);
+			mEditText.setBackgroundColor(0xff000000);
 			break;
 		case 5: // White  -  Orange
-			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xFFFFA500);
+			mEditText.setTextColor(0xffffffff);
+			mEditText.setBackgroundColor(0xFFFFA500);
 			break;
 		case 6: // Black  -  Orange
-			mTextView.setTextColor(0xff000000);
-			mTextView.setBackgroundColor(0xFFFFA500);
+			mEditText.setTextColor(0xff000000);
+			mEditText.setBackgroundColor(0xFFFFA500);
 			break;
 		case 7: // Black  -  Yellow
-			mTextView.setTextColor(0xff000000);
-			mTextView.setBackgroundColor(0xffFFF396);
+			mEditText.setTextColor(0xff000000);
+			mEditText.setBackgroundColor(0xffFFF396);
 			break;
 		case 8: // Green - White
-			mTextView.setTextColor(0xff00C22E);
-			mTextView.setBackgroundColor(0xffffffff);
+			mEditText.setTextColor(0xff00C22E);
+			mEditText.setBackgroundColor(0xffffffff);
 			break;
 		case 9: // Green - Black
-			mTextView.setTextColor(0xff00C22E);
-			mTextView.setBackgroundColor(0xff000000);
+			mEditText.setTextColor(0xff00C22E);
+			mEditText.setBackgroundColor(0xff000000);
 			break;
 		case 10: // White - Green
-			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xff00C22E);
+			mEditText.setTextColor(0xffffffff);
+			mEditText.setBackgroundColor(0xff00C22E);
 			break;
 		case 11: // Black - Green
-			mTextView.setTextColor(0xff000000);
-			mTextView.setBackgroundColor(0xff00C22E);
+			mEditText.setTextColor(0xff000000);
+			mEditText.setBackgroundColor(0xff00C22E);
 			break;
 		case 12: // LightBlue  -  White
-			mTextView.setTextColor(0xFF4169E1);
-			mTextView.setBackgroundColor(0xffffffff);
+			mEditText.setTextColor(0xFF4169E1);
+			mEditText.setBackgroundColor(0xffffffff);
 			break;
 		case 13: // White - LightBlue
-			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xFF4169E1);
+			mEditText.setTextColor(0xffffffff);
+			mEditText.setBackgroundColor(0xFF4169E1);
 			break;
 		case 14: // Black - LightBlue
-			mTextView.setTextColor(0xff000000);
-			mTextView.setBackgroundColor(0xFF4169E1);
+			mEditText.setTextColor(0xff000000);
+			mEditText.setBackgroundColor(0xFF4169E1);
 			break;
 		case 15: // White  -  Blue
-			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xff1038AA);
+			mEditText.setTextColor(0xffffffff);
+			mEditText.setBackgroundColor(0xff1038AA);
 			break;
 		case 16: // Pink  -  White
-			mTextView.setTextColor(0xFFFF1493);
-			mTextView.setBackgroundColor(0xffffffff);
+			mEditText.setTextColor(0xFFFF1493);
+			mEditText.setBackgroundColor(0xffffffff);
 			break;
 		case 17: // LightPurple - White
-			mTextView.setTextColor(0xffC71585);
-			mTextView.setBackgroundColor(0xffffffff);
+			mEditText.setTextColor(0xffC71585);
+			mEditText.setBackgroundColor(0xffffffff);
 			break;
 		case 18: // White - LightPurple
-			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xffC71585);
+			mEditText.setTextColor(0xffffffff);
+			mEditText.setBackgroundColor(0xffC71585);
 			break;
 		case 19: // White  -  Purple
-			mTextView.setTextColor(0xffffffff);
-			mTextView.setBackgroundColor(0xff4D0D2A);
+			mEditText.setTextColor(0xffffffff);
+			mEditText.setBackgroundColor(0xff4D0D2A);
 			break;
 		default:
 			break;
@@ -899,6 +1016,8 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         mVideoView.setDimensions(videoWidth, videoHeight);
 		mVideoView.getHolder().setFixedSize(videoWidth, videoHeight);
+		
+		mVideoView.seekTo(stopPosition);
 		
         try {
         	mProgressDialogVideo.dismiss();
@@ -947,11 +1066,15 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	
 	protected void onPause() {
         super.onPause();
+        stopPosition = mVideoView.getCurrentPosition();
 
         if (MainActivity.isDebug) {
         	Log.e("gray", "PlayActivity.java: onPause ");
+        	Log.e("gray", "PlayActivity.java:onPause, stopPosition:" + stopPosition);
 		}
-        stopPosition = mVideoView.getCurrentPosition(); //stopPosition is an int
+        
+        flagOnPause = true;
+        
         isVideoPlaying = mVideoView.isPlaying();
         
         if (isVideoPlaying) {
@@ -960,7 +1083,6 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
         	startService(playVideoServiceIntent);
         	isStopService = false;
 		}
-        
         mVideoView.pause();
 	}
 	
@@ -984,20 +1106,27 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		android.view.Display display = wm.getDefaultDisplay();
 		Point size = new Point();
 		
-		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2){   //API LEVEL 13
-		     display.getSize(size);
-		     displayWidth = size.x;
-		     displayHeight = size.y;
-		}else{    
-			// for older device
-			displayWidth = display.getWidth();
-			displayHeight = display.getHeight();
+		if (videoWidth == 0 && videoHeight == 0) {
+			
+			if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR2){   //API LEVEL 13
+				display.getSize(size);
+				displayWidth = size.x;
+				displayHeight = size.y;
+			}else{    
+				// for older device
+				displayWidth = display.getWidth();
+				displayHeight = display.getHeight();
+			}
+		} else {
+			displayWidth = videoWidth;
+			displayHeight = videoHeight;
 		}
 		
 		if (MainActivity.isDebug) {
 			Log.e("gray", "PlayActivity.java: onResume ");
 			Log.e("gray", "PlayActivity.java: default width : " + displayWidth);
 			Log.e("gray", "PlayActivity.java: default height : " + displayHeight);
+			Log.e("gray", "PlayActivity.java:onResume, stopPosition:" + stopPosition);
 		}
 		
 		if (isVideoFileExit) {
@@ -1028,76 +1157,76 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 		super.onDestroy();
 	}
 	
-	@Override
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		
-		if (MainActivity.isDebug) {
-			Log.e("gray", "PlayActivity.java:onKeyDown, " + "");
-		}
-	    if (keyCode == KeyEvent.KEYCODE_MENU) {
-	    	if (MainActivity.isDebug) {
-	    		Log.e("gray", "PlayActivity.java:onKeyDown, " + "KeyEvent.KEYCODE_MENU");
-			}
-	    	
-	    	if (mVideoView.isPlaying()) {
-				mVideoView.pause();
-			} else {
-				mVideoView.start();
-			}
-	    	
-	    	if (MainActivity.isEnableLongPressTranslate) {
-				
-	    		//translate
-	    		if (mTextView.getSelectionStart() != mTextView.getSelectionEnd()) {
-	    			
-	    			srcText = mTextView.getText().subSequence(mTextView.getSelectionStart(), mTextView.getSelectionEnd());
-	    			if (isNetworkAvailable()){
-	    				
-	    				if (MainActivity.isDebug) {
-	    					Log.e("gray", "PlayActivity.java: TextView.onClick : " + mTextView.getSelectionStart() + "--"+ mTextView.getSelectionEnd());
-	    					Log.e("gray", "PlayActivity.java: TextView.onClick : " + srcText);
-	    				}
-	    				
-	    				showProcessDialog(2, "Please Wait...", "Translate...");
-	    				
-	    				new Thread(new Runnable() 
-	    				{ 
-	    					@Override
-	    					public void run() 
-	    					{ 
-	    						try {
-	    							getTranslateString(srcText);
-	    							handler.sendEmptyMessage(1);
-	    							if (MainActivity.isDebug) {
-	    								Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
-	    							}
-	    						} catch (Exception e) {
-	    							Log.e("gray", "PlayActivity.java:run, Exception4:" + e.toString());  
-	    							e.printStackTrace();
-	    						}
-	    					} 
-	    				}).start();
-	    				
-	    			} else {
-	    				 // save translate word to note
-						FileWriter fw;
-						try {
-							fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".cnnsNote.txt", true);
-							BufferedWriter bw = new BufferedWriter(fw);
-							bw.write(srcText+"\n\n");
-							bw.close();
-						} catch (IOException e) {
-							Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
-							e.printStackTrace();
-						}
-	    				showAlertDialog("Alert Message - translate", "No Availiable Network!!");
-	    			}
-	    		}
-			}
-	        return true;
-	    }
-	    return super.onKeyDown(keyCode, event);
-	}
+//	@Override
+//	public boolean onKeyDown(int keyCode, KeyEvent event) {
+//		
+//		if (MainActivity.isDebug) {
+//			Log.e("gray", "PlayActivity.java:onKeyDown, " + "");
+//		}
+//	    if (keyCode == KeyEvent.KEYCODE_MENU) {
+//	    	if (MainActivity.isDebug) {
+//	    		Log.e("gray", "PlayActivity.java:onKeyDown, " + "KeyEvent.KEYCODE_MENU");
+//			}
+//	    	
+//	    	if (mVideoView.isPlaying()) {
+//				mVideoView.pause();
+//			} else {
+//				mVideoView.start();
+//			}
+//	    	
+//	    	if (MainActivity.isEnableLongPressTranslate) {
+//				
+//	    		//translate
+//	    		if (mEditText.getSelectionStart() != mEditText.getSelectionEnd()) {
+//	    			
+//	    			srcText = mEditText.getText().subSequence(mEditText.getSelectionStart(), mEditText.getSelectionEnd());
+//	    			if (isNetworkAvailable()){
+//	    				
+//	    				if (MainActivity.isDebug) {
+//	    					Log.e("gray", "PlayActivity.java: EditText.onClick : " + mEditText.getSelectionStart() + "--"+ mEditText.getSelectionEnd());
+//	    					Log.e("gray", "PlayActivity.java: EditText.onClick : " + srcText);
+//	    				}
+//	    				
+//	    				showProcessDialog(2, "Please Wait...", "Translate...");
+//	    				
+//	    				new Thread(new Runnable() 
+//	    				{ 
+//	    					@Override
+//	    					public void run() 
+//	    					{ 
+//	    						try {
+//	    							getTranslateString(srcText);
+//	    							handler.sendEmptyMessage(1);
+//	    							if (MainActivity.isDebug) {
+//	    								Log.e("gray", "PlayActivity.java:run, translatedText:" + translatedText);
+//	    							}
+//	    						} catch (Exception e) {
+//	    							Log.e("gray", "PlayActivity.java:run, Exception4:" + e.toString());  
+//	    							e.printStackTrace();
+//	    						}
+//	    					} 
+//	    				}).start();
+//	    				
+//	    			} else {
+//	    				 // save translate word to note
+//						FileWriter fw;
+//						try {
+//							fw = new FileWriter(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+cnnVideoName+".cnnsNote.txt", true);
+//							BufferedWriter bw = new BufferedWriter(fw);
+//							bw.write(srcText+"\n\n");
+//							bw.close();
+//						} catch (IOException e) {
+//							Log.e("gray", "PlayActivity.java:run, save script error, Exception e:" + e.toString()); 
+//							e.printStackTrace();
+//						}
+//	    				showAlertDialog("Alert Message - translate", "No Availiable Network!!");
+//	    			}
+//	    		}
+//			}
+//	        return true;
+//	    }
+//	    return super.onKeyDown(keyCode, event);
+//	}
 	
 	public String htmlUnicodeToJavaUnicode(String inputs) {
 		StringBuffer result = new StringBuffer("");
@@ -1141,22 +1270,105 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 	    super.onCreateContextMenu(menu, v, menuInfo);
 	}
 
-//	@Override
-//  public boolean onOptionsItemSelected(MenuItem item) {
-//		
-//		if (MainActivity.isDebug) {
-//			Log.e("gray", "PlayActivity.java:onOptionsItemSelected, " + "");
-//		}
-//		
-//		return true;
-//	}
-	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+
+		if (MainActivity.isDebug) {
+			Log.e("gray", "PlayActivity.java:onOptionsItemSelected, " + "");
+		}
+
+		switch (item.getItemId()) {
+
+		case R.id.action_rotate_screen:
+			if (MainActivity.isDebug) {
+				Log.e("gray", "PlayActivity.java:onOptionsItemSelected, case R.id.action_rotate_screen");
+			}
+			
+			isRotate = true;
+			// Get current screen orientation
+			int orientation = getResources().getConfiguration().orientation;
+			switch (orientation) {
+			case Configuration.ORIENTATION_PORTRAIT:
+				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+				break;
+			case Configuration.ORIENTATION_LANDSCAPE:
+				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+				break;
+			}
+
+			break;
+			
+        case R.id.action_note:
+        	if (MainActivity.isDebug) {
+        		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_note");
+        	}
+        	
+        	NoteListActivity.NoteFileName = cnnVideoName + ".cnnsNote.txt";
+        	
+            Intent intent = new Intent();
+			intent.setClass(PlayActivity.this, NoteActivity.class);
+			startActivityForResult(intent, 2);
+            break;
+            
+        case R.id.action_rough_position:
+
+        	double roughPosition = 0.0;
+        	int totalHight;
+        	int totalVideoLength, currentVideoPosition;
+        	
+        	totalHight = mEditText.getHeight();
+        	totalVideoLength = mVideoView.getDuration();
+        	currentVideoPosition = mVideoView.getCurrentPosition();
+        	roughPosition = (double)currentVideoPosition * (double)totalHight / (double)totalVideoLength;
+        	
+        	ScrollView sv = (ScrollView) findViewById(R.id.scrollView1);
+        	if (MainActivity.isDebug) {
+        		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_rough_position");
+        		Log.e("gray", "PlayActivity.java:onOptionsItemSelected, totalHight:" + totalHight);
+        		Log.e("gray", "PlayActivity.java:onOptionsItemSelected, totalVideoLength:" + totalVideoLength);
+        		Log.e("gray", "PlayActivity.java:onOptionsItemSelected, currentVideoPosition:" + currentVideoPosition);
+        		Log.e("gray", "PlayActivity.java:onOptionsItemSelected, roughPosition:" + roughPosition);
+        	}
+        	
+        	sv.scrollTo(0, (int)roughPosition);
+            break;
+            
+        }
+		return true;
+	}
+
+	public String milliSecondsToTimer(long milliseconds) {
+		String finalTimerString = "";
+		String secondsString = "";
+
+		// Convert total duration into time
+		int hours = (int) (milliseconds / (1000 * 60 * 60));
+		int minutes = (int) (milliseconds % (1000 * 60 * 60)) / (1000 * 60);
+		int seconds = (int) ((milliseconds % (1000 * 60 * 60)) % (1000 * 60) / 1000);
+		// Add hours if there
+		if (hours > 0) {
+			finalTimerString = hours + ":";
+		}
+
+		// Prepending 0 to seconds if it is one digit
+		if (seconds < 10) {
+			secondsString = "0" + seconds;
+		} else {
+			secondsString = "" + seconds;
+		}
+
+		finalTimerString = finalTimerString + minutes + ":" + secondsString;
+
+		// return timer string
+		return finalTimerString;
+	}
+    
 	// do't show settings at this page
-//	@Override
-//	public boolean onCreateOptionsMenu(Menu menu) {
-//		// Inflate the menu; this adds items to the action bar if it is present.
-//		getMenuInflater().inflate(R.menu.play, menu);
-//		return true;
-//	}
-	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.play, menu);
+		return true;
+	}
+
 }

@@ -55,6 +55,8 @@ public class NoteActivity extends Activity {
 		
 		mTextView = (TextView) findViewById(R.id.tv_noteContent);
 		
+		s = s.replaceAll("\n\n\n\n\n", "\n");
+		s = s.replaceAll("\n\n\n\n", "\n");
 		mTextView.setText(s+"\n\n");
 		mTextView.setTextSize(MainActivity.textSize);
 		

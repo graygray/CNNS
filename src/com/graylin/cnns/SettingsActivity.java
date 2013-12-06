@@ -89,9 +89,11 @@ public class SettingsActivity extends PreferenceActivity {
 		// their values. When their values change, their summaries are updated
 		// to reflect the new value, per the Android Design guidelines.
 		bindPreferenceSummaryToValue(findPreference("pref_textSize"));
+		bindPreferenceSummaryToValue(findPreference("pref_swipeTime"));
 		bindPreferenceSummaryToValue(findPreference("pref_translate_language"));
 		bindPreferenceSummaryToValue(findPreference("pref_script_theme"));
 		bindPreferenceSummaryToValue(findPreference("pref_auto_delete_file"));
+//		bindPreferenceSummaryToValue2(findPreference("pref_seekbar"));
 //		bindPreferenceSummaryToValue(findPreference("notifications_new_message_ringtone"));
 //		bindPreferenceSummaryToValue(findPreference("sync_frequency"));
 	}
@@ -199,6 +201,40 @@ public class SettingsActivity extends PreferenceActivity {
 			} else {
 				// For all other preferences, set the summary to the value's
 				// simple string representation.
+				if (MainActivity.isDebug) {
+					Log.e("gray", "SettingsActivity.java:onPreferenceChange, else, " + "");
+				}
+				
+				Integer tempInt = 0;
+				if (preference.getKey().equalsIgnoreCase("pref_textSize") ) {
+					try {
+						tempInt = Integer.valueOf(stringValue);
+					} catch (Exception e) {
+						Log.e("gray", "MainActivity.java: onPreferenceChange, else, " + e.toString() );
+					}
+					if (tempInt < 8) {
+						tempInt = 8;
+					} else if (tempInt > 50){
+						tempInt = 50;
+				    }
+					stringValue = tempInt.toString();
+				} else if (preference.getKey().equalsIgnoreCase("pref_swipeTime")) {
+					try {
+						tempInt = Integer.valueOf(stringValue);
+					} catch (Exception e) {
+						Log.e("gray", "MainActivity.java: onPreferenceChange, else, " + e.toString() );
+					}
+					if (tempInt < 1) {
+						tempInt = 1;
+					} else if (tempInt > 20){
+						tempInt = 20;
+				    }
+					stringValue = tempInt.toString();
+				}
+			
+				if (MainActivity.isDebug) {
+					Log.e("gray", "SettingsActivity.java:onPreferenceChange, else, " + "");
+				}
 				preference.setSummary(stringValue);
 			}
 			return true;
@@ -232,6 +268,24 @@ public class SettingsActivity extends PreferenceActivity {
 						""));
 	}
 
+//	private static void bindPreferenceSummaryToValue2(Preference preference) {
+//		if (MainActivity.isDebug) {
+//			Log.e("gray", "SettingsActivity.java:bindPreferenceSummaryToValue");
+//		}
+//		
+//		// Set the listener to watch for value changes.
+//		preference
+//				.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
+//
+//		// Trigger the listener immediately with the preference's
+//		// current value.
+//		sBindPreferenceSummaryToValueListener.onPreferenceChange(
+//				preference,
+//				PreferenceManager.getDefaultSharedPreferences(
+//						preference.getContext()).getInt(preference.getKey(),
+//						0));
+//	}
+	
 	/**
 	 * This fragment shows general preferences only. It is used when the
 	 * activity is showing a two-pane settings UI.
@@ -251,9 +305,11 @@ public class SettingsActivity extends PreferenceActivity {
 			// updated to reflect the new value, per the Android Design
 			// guidelines.
 			bindPreferenceSummaryToValue(findPreference("pref_textSize"));
+			bindPreferenceSummaryToValue(findPreference("pref_swipeTime"));
 			bindPreferenceSummaryToValue(findPreference("pref_translate_language"));
 			bindPreferenceSummaryToValue(findPreference("pref_script_theme"));
 			bindPreferenceSummaryToValue(findPreference("pref_auto_delete_file"));
+//			bindPreferenceSummaryToValue2(findPreference("pref_seekbar"));
 		}
 	}
 

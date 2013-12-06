@@ -47,7 +47,7 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 
 public class MainActivity extends Activity {
-	 
+	
 	public static boolean isDebug = false;
 //	public static boolean isDebug = true;
 
@@ -70,7 +70,7 @@ public class MainActivity extends Activity {
 	public ListView listView;
 	public ArrayAdapter<String> adapter;
 	public AdView adView;
-	// ProgressDialog, wait network effort to be done
+	// ProgressDialog, wait network work to be done
 	public ProgressDialog mProgressDialog;
 	
 	// HTML page
@@ -86,15 +86,20 @@ public class MainActivity extends Activity {
 	// settings variable
 	public static boolean isEnableDownload;
 	public static int textSize;
+	public static int swipeTime;
 	public static int scriptTheme;
 	public static int autoDelete;
 	public static String translateLanguage;
 	public static boolean isEnableLongPressTranslate;
 	public static boolean isEnableSoftButtonTranslate;
+	public static boolean isVideoControlBar;
 	
 	// broadcast receiver
 	public AudioManager audioManager;
 	public ComponentName componentName = null;
+	
+	// orientation
+	public static int originOrientation;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -116,6 +121,7 @@ public class MainActivity extends Activity {
 		
 		// get initial data
 		isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
+		isVideoControlBar = sharedPrefs.getBoolean("pref_videoControlBar", true);
 		try {
 			textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", "18"));
 		} catch (Exception e) {
@@ -125,6 +131,17 @@ public class MainActivity extends Activity {
         	textSize = 8;
 		} else if (textSize > 50){
         	textSize = 50;
+        }
+        
+        try {
+			swipeTime = Integer.valueOf(sharedPrefs.getString("pref_swipeTime", "3"));
+		} catch (Exception e) {
+			Log.e("gray", "MainActivity.java: onCreate, Exception : " + e.toString() );
+		}
+        if (swipeTime < 1) {
+        	swipeTime = 1;
+		} else if (swipeTime > 20){
+			swipeTime = 20;
         }
         
         isEverLoaded = sharedPrefs.getBoolean("isEverLoaded", false);
@@ -160,7 +177,7 @@ public class MainActivity extends Activity {
         
         scriptTheme = Integer.valueOf( sharedPrefs.getString("pref_script_theme", "0") );
         translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
-        isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
+//        isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
         isEnableSoftButtonTranslate = sharedPrefs.getBoolean("pref_soft_button_translate", false);
         autoDelete = Integer.valueOf( sharedPrefs.getString("pref_auto_delete_file", "0") );
 		
@@ -347,14 +364,17 @@ public class MainActivity extends Activity {
 		case 0:
 			// back to main page from settings page, set settings value to variable
 			if (isDebug) {
-				Log.e("gray", "PlayActivity.java: pref_download :" + sharedPrefs.getBoolean("pref_download", false) );
-				Log.e("gray", "PlayActivity.java: pref_textSize :" + sharedPrefs.getString("pref_textSize", "18") );
-				Log.e("gray", "PlayActivity.java: pref_script_theme :" + sharedPrefs.getString("pref_script_theme", "0") );
-				Log.e("gray", "PlayActivity.java: pref_translate_language :" + sharedPrefs.getString("pref_translat_language", "zh-TW") );
-				Log.e("gray", "PlayActivity.java: pref_auto_delete_file :" + sharedPrefs.getString("pref_auto_delete_file", "0") );
+				Log.e("gray", "MainActivity.java: pref_download :" + sharedPrefs.getBoolean("pref_download", false) );
+				Log.e("gray", "MainActivity.java: pref_videoControlBar :" + sharedPrefs.getBoolean("pref_videoControlBar", false) );
+				Log.e("gray", "MainActivity.java: pref_textSize :" + sharedPrefs.getString("pref_textSize", "18") );
+				Log.e("gray", "MainActivity.java: pref_swipeTime :" + sharedPrefs.getString("pref_swipeTime", "3") );
+				Log.e("gray", "MainActivity.java: pref_script_theme :" + sharedPrefs.getString("pref_script_theme", "0") );
+				Log.e("gray", "MainActivity.java: pref_translate_language :" + sharedPrefs.getString("pref_translat_language", "zh-TW") );
+				Log.e("gray", "MainActivity.java: pref_auto_delete_file :" + sharedPrefs.getString("pref_auto_delete_file", "0") );
 			}
 			
 			isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
+			isVideoControlBar = sharedPrefs.getBoolean("pref_videoControlBar", true);
 			
 			try {
 				textSize = Integer.valueOf(sharedPrefs.getString("pref_textSize", "18"));
@@ -365,11 +385,22 @@ public class MainActivity extends Activity {
 	        	textSize = 8;
 			} else if (textSize > 50){
 	        	textSize = 50;
-	        } 
+	        }
+	        
+	        try {
+				swipeTime = Integer.valueOf(sharedPrefs.getString("pref_swipeTime", "3"));
+			} catch (Exception e) {
+				Log.e("gray", "MainActivity.java: onCreate, Exception : " + e.toString() );
+			}
+	        if (swipeTime < 1) {
+	        	swipeTime = 1;
+			} else if (swipeTime > 20){
+				swipeTime = 20;
+	        }
 			
 	        scriptTheme = Integer.valueOf( sharedPrefs.getString("pref_script_theme", "0") );
 			translateLanguage = sharedPrefs.getString("pref_translate_language", "zh-TW");
-			isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
+//			isEnableLongPressTranslate = sharedPrefs.getBoolean("pref_longpress_translate", false);
 			isEnableSoftButtonTranslate = sharedPrefs.getBoolean("pref_soft_button_translate", false);
 			autoDelete = Integer.valueOf( sharedPrefs.getString("pref_auto_delete_file", "0") );
 			
@@ -387,7 +418,9 @@ public class MainActivity extends Activity {
 			break;
 			
 		case 1:
+			setRequestedOrientation(originOrientation);
 			showListView();
+			
 			break;
 			
 		case 2:
@@ -540,12 +573,13 @@ public class MainActivity extends Activity {
 					Log.e("gray", "MainActivity.java:onItemClick, " + "vodeoAddressString:" + videoAddressString);
 				}
 			
+				originOrientation = getResources().getConfiguration().orientation;
+				
 				Intent intent = new Intent();
 				intent.setClass(MainActivity.this, PlayActivity.class);
 				startActivityForResult(intent, 1);
 			}
 	    }); 
-		
 	}
 	
 	@SuppressLint("HandlerLeak")
@@ -601,12 +635,12 @@ public class MainActivity extends Activity {
 	    if(resultSNode.length > 0) {
 	    	
 	    	if (isDebug) {
-	    		Log.e("gray", "MainActivity.java:isNeedUpdate, resultSNode.length:" + resultSNode.length);
+	    		Log.e("gray", "MainActivity.java:isVideoUpdate, resultSNode.length:" + resultSNode.length);
 	    		for (int i = 0; i < resultSNode.length; i++) {
 	    			
 	    			TagNode resultNode = (TagNode)resultSNode[i];
 	    			resultS = resultNode.getText().toString();
-	    			Log.e("gray", "MainActivity.java:isNeedUpdate, " + resultS);
+	    			Log.e("gray", "MainActivity.java:isVideoUpdate, " + resultS);
 	    		}
 			}
 	    	
@@ -614,9 +648,19 @@ public class MainActivity extends Activity {
 	    	newestVideoSource = resultNode.getText().toString();
 	    	
 	    } else {
-	    	Log.e("gray", "MainActivity.java:isNeedUpdate, resultSNode.length <= 0, err!!");
+	    	Log.e("gray", "MainActivity.java:isVideoUpdate, resultSNode.length <= 0, err!!");
 		}
 	    
+	    String [] tempSA = new String [32];
+        tempSA = newestVideoSource.split(" ");
+        if (isDebug) {
+            Log.e("gray", "MainActivity.java:isVideoUpdate, length : " + tempSA.length);
+            for (int j = 0; j < tempSA.length; j++) {
+                Log.e("gray", "MainActivity.java:isVideoUpdate, " + j + " : " + tempSA[j]);
+            }
+        }
+        newestVideoSource = tempSA[5];
+        
 		// get last video source string
 		String lastVideosource = sharedPrefs.getString("lastVideosource", "");
 		if (newestVideoSource.equalsIgnoreCase(lastVideosource)) {
@@ -641,6 +685,7 @@ public class MainActivity extends Activity {
 		String resultS = "";
 		String matchString = "CNN Student News";
 		String lastVideosource = sharedPrefs.getString("lastVideosource", "");
+		String comparedDateS = "";
 	    int arrayIndex = 0;
 	    Object[] resultSNode;
 	
@@ -676,9 +721,23 @@ public class MainActivity extends Activity {
     			TagNode resultNode = (TagNode)resultSNode[i];
     			resultS = resultNode.getText().toString();
     			
+    			String [] tempSA = new String [32];
+    	        tempSA = resultS.split(" ");
+    	        if (isDebug) {
+    	            Log.e("gray", "MainActivity.java:isVideoUpdate, length : " + tempSA.length);
+    	            for (int j = 0; j < tempSA.length; j++) {
+    	                Log.e("gray", "MainActivity.java:isVideoUpdate, " + j + " : " + tempSA[j]);
+    	            }
+    	        }
+    	        comparedDateS = tempSA[5];
+    			
     			if (resultS.regionMatches(0, matchString, 0, matchString.length())) {
-    				
-					if (lastVideosource.equalsIgnoreCase(resultS)) {
+    				if (isDebug) {
+    					Log.e("gray", "MainActivity.java:getCNNSTitle, lastVideosource:" + lastVideosource);
+    					Log.e("gray", "MainActivity.java:getCNNSTitle, resultS:" + resultS);
+    					Log.e("gray", "MainActivity.java:getCNNSTitle, comparedDateS:" + comparedDateS);
+					}
+					if (lastVideosource.equalsIgnoreCase(comparedDateS)) {
 						
 	    				resultS = resultS.replace("CNN Student News -", "");
 	    				cnnListStringArray[arrayIndex] = resultS;
@@ -696,7 +755,7 @@ public class MainActivity extends Activity {
 					}
     			} else {
     				if (isDebug) {
-    					Log.e("gray", "MainActivity.java: string not match!!" );
+    					Log.e("gray", "MainActivity.java:getCNNSTitle, string not match!!" );
     				}
     			}
     		}
@@ -912,23 +971,27 @@ public class MainActivity extends Activity {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
         	}
         	showAlertDialog("Information", 
-        			"What's new in this version (1.28) ?\n\n" +
-        			"some bug fix.\n\n" +
+        			"What's new in this version (1.32) ?\n\n" +
+					"1. Add eng-eng translation.\n" +
+					"2. Add \"Rough Position\" function.\n" +
+					"3. Update queried website. (traditional chinese)\n" +
+					"PS : For translation, I just send a translated query to some website, and get the translated result to show, but I don't know if it's appropriate for your language; " +
+					"If you have better or suggested one, just feel free to mail me.\n\n" +
         			"Usage & Features:\n\n" +
-        			"1. Quick translate : ( 3 method )\n" +
+        			"1. Quick translate : ( 2 method )\n" +
         			"a. By double click a word.\n" +
-        			"some devices can't perform this method, try b or c; method b or c need to be enabled first at \"settings\";\n" +
-        			"b. Long press to select a word, then click \"MENU\" key.\n" +
-        			"if your device don't have \"MENU\" key, try c.\n" +
-        			"c. Long press to select a word, then click \"Translate\" button.\n" +
+        			"some devices can't perform this method, try b method;\n" +
+        			"b. By long press to select a word, then click \"Translate\" button. (need to be enabled first at \"settings\")\n" +
         			"All need network support.\n\n" +
         			"2. Quick Note :\n" +
         			"After you look up a word and translate it which will be automatically saved to a file ( also store at /sdcard/download ); " +
         			"then you can check what you note at \"Quick Note\" page.\n\n" +
         			"3. Video operation :\n" +
-        			"a. Click video or \"MENU\" key to pause/resume.\n" +
-        			"b. Swipe(slide on video) left/right to rewind/fast forward.\n" +
-        			"c. Swipe up/down to zoom out/in.\n\n" +
+        			"a. Pause/resume by click central area of video view.\n" +
+        			"b. Rewind by click left area (1/6 zone) of video.\n" +
+					"c. Fast forward by click right area(5/6 zone) of video.\n" +
+					"d. Swipe(slide on video) left/right to continuous rewind/fast forward.\n" +
+					"e. Swipe up/down to zoom out/in.\n\n" +
         			"4. Script & video download :\n" +
         			"The script will be downloaded automatically; " +
         			"but video need to be enabled first at \"settings\".\n" +
@@ -967,7 +1030,10 @@ public class MainActivity extends Activity {
         			"http://rss.cnn.com/services/podcasting/studentnews/rss.xml\n" +
         			"When there is a new video here, we will update the list.\n" +
         			"If video is already on website, but the App's list still not be updated, please try it an hour later.\n\n" +
-        			"3. Any suggestion or bug just:\n" +
+        			"3. How translation works?\n" +
+        			"I just send a translated query to some website, and get the translated result to show, but I don't know if it's appropriate for your language(or none for your language);" +
+					"If you have better or suggested website, just feel free to mail me.\n\n" +
+        			"4. Any suggestion or bug just:\n" +
         			"mail to : llkkqq@gmail.com\n"
         			);
             break;

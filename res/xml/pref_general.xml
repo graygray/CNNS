@@ -17,7 +17,7 @@
         android:selectAllOnFocus="true"
         android:singleLine="true"
         android:title="@string/pref_title_setTextSize" />
-
+        
     <ListPreference
         android:defaultValue="0"
         android:entries="@array/pref_script_theme"
@@ -26,6 +26,22 @@
         android:negativeButtonText="@null"
         android:positiveButtonText="@null"
         android:title="@string/pref_title_set_script_theme" />
+        
+    <CheckBoxPreference
+        android:defaultValue="true"
+        android:key="pref_videoControlBar"
+        android:summary="@string/pref_description_videoControlBar"
+        android:title="@string/pref_title_videoControlBar" />
+    
+	<EditTextPreference
+        android:capitalize="words"
+        android:defaultValue="@string/pref_default_SwipeTime"
+        android:inputType="number"
+        android:key="pref_swipeTime"
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="@string/pref_title_setSwipeTime" />
     
     <!--
          NOTE: Hide buttons to simplify the UI. Users can touch outside the dialog to
@@ -41,13 +57,13 @@
         android:negativeButtonText="@null"
         android:positiveButtonText="@null"
         android:title="@string/pref_title_set_translate_language" />
-    
+<!--     
 	<CheckBoxPreference
 	 android:defaultValue="false"
 	 android:key="pref_longpress_translate"
 	 android:summary="@string/pref_longpress_translate_description"
 	 android:title="@string/pref_longpress_translate_title" />
-	
+ -->	
 	<CheckBoxPreference
 	 android:defaultValue="false"
 	 android:key="pref_soft_button_translate"
@@ -62,5 +78,12 @@
 	   android:negativeButtonText="@null"
 	   android:positiveButtonText="@null"
 	   android:title="@string/pref_title_auto_delete_file" />
-       
+	
+	<!-- seekbar test
+	<com.graylin.cnns.SeekBarPreference  
+		android:key="pref_seekbar"
+		android:defaultValue="32"
+		android:title="Custom Preference" />     
+        -->
+        
 </PreferenceScreen>

@@ -7,7 +7,10 @@
     <string name="title_activity_play">Video &amp; Script</string>
     <string name="action_info">Information</string>
     <string name="action_qa">Q &amp; A</string>
-    <string name="action_notelist">Quick Note</string>
+    <string name="action_notelist">Quick Note List</string>
+    <string name="action_note">Note</string>
+    <string name="action_rough_position">Rough Position</string>
+    <string name="action_rotate_screen">Rotate Screen</string>
     <string name="title_activity_note_list">Quick Note List</string>
     <string name="title_activity_note">Note Content</string>
     <string name="string_translate">Translate</string>
