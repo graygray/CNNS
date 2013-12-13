@@ -101,6 +101,9 @@ public class MainActivity extends Activity {
 	// orientation
 	public static int originOrientation;
 	
+	// AdBuddiz ad
+	public static boolean isAdBuddizEverLoad;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -120,6 +123,7 @@ public class MainActivity extends Activity {
 		sharedPrefsEditor = sharedPrefs.edit();  
 		
 		// get initial data
+		isAdBuddizEverLoad = false;
 		isEnableDownload = sharedPrefs.getBoolean("pref_download", false);
 		isVideoControlBar = sharedPrefs.getBoolean("pref_videoControlBar", true);
 		try {
@@ -686,6 +690,8 @@ public class MainActivity extends Activity {
 		String matchString = "CNN Student News";
 		String lastVideosource = sharedPrefs.getString("lastVideosource", "");
 		String comparedDateS = "";
+		String comparedDateS2 = "";
+		String comparedDateS3 = "";
 	    int arrayIndex = 0;
 	    Object[] resultSNode;
 	
@@ -730,6 +736,8 @@ public class MainActivity extends Activity {
     	            }
     	        }
     	        comparedDateS = tempSA[5];
+    	        comparedDateS2 = tempSA[4];
+    	        comparedDateS3 = tempSA[6];
     			
     			if (resultS.regionMatches(0, matchString, 0, matchString.length())) {
     				if (isDebug) {
@@ -737,7 +745,9 @@ public class MainActivity extends Activity {
     					Log.e("gray", "MainActivity.java:getCNNSTitle, resultS:" + resultS);
     					Log.e("gray", "MainActivity.java:getCNNSTitle, comparedDateS:" + comparedDateS);
 					}
-					if (lastVideosource.equalsIgnoreCase(comparedDateS)) {
+					if (lastVideosource.equalsIgnoreCase(comparedDateS)  || 
+						lastVideosource.equalsIgnoreCase(comparedDateS2) ||
+						lastVideosource.equalsIgnoreCase(comparedDateS3) ) {
 						
 	    				resultS = resultS.replace("CNN Student News -", "");
 	    				cnnListStringArray[arrayIndex] = resultS;
@@ -971,12 +981,9 @@ public class MainActivity extends Activity {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_info");
         	}
         	showAlertDialog("Information", 
-        			"What's new in this version (1.32) ?\n\n" +
-					"1. Add eng-eng translation.\n" +
-					"2. Add \"Rough Position\" function.\n" +
-					"3. Update queried website. (traditional chinese)\n" +
-					"PS : For translation, I just send a translated query to some website, and get the translated result to show, but I don't know if it's appropriate for your language; " +
-					"If you have better or suggested one, just feel free to mail me.\n\n" +
+        			"What's new in this version (1.34) ?\n\n" +
+					"fix get no srcipt on December 10, 2013\n" +
+					"PS : Because CNNS website change the URL of script for no reason, sorry for the inconvient!\n\n" +
         			"Usage & Features:\n\n" +
         			"1. Quick translate : ( 2 method )\n" +
         			"a. By double click a word.\n" +
@@ -1038,14 +1045,15 @@ public class MainActivity extends Activity {
         			);
             break;
             
-        case R.id.action_notelist:
+        // remove quick note list
+        /*case R.id.action_notelist:
         	if (isDebug) {
         		Log.e("gray", "MainActivity.java:onOptionsItemSelected, case R.id.action_notelist");
         	}
             Intent intent = new Intent();
 			intent.setClass(MainActivity.this, NoteListActivity.class);
 			startActivityForResult(intent, 2);
-            break;
+            break;*/
         }
  
         return true;

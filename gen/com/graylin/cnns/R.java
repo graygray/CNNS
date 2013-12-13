@@ -49,11 +49,10 @@ public final class R {
         public static final int ItemTitle=0x7f0a000d;
         public static final int RelativeLayout1=0x7f0a0007;
         public static final int action_info=0x7f0a0011;
-        public static final int action_note=0x7f0a0015;
-        public static final int action_notelist=0x7f0a0013;
+        public static final int action_note=0x7f0a0014;
         public static final int action_qa=0x7f0a0012;
-        public static final int action_rotate_screen=0x7f0a0014;
-        public static final int action_rough_position=0x7f0a0016;
+        public static final int action_rotate_screen=0x7f0a0013;
+        public static final int action_rough_position=0x7f0a0015;
         public static final int action_settings=0x7f0a0010;
         public static final int mainListView=0x7f0a0000;
         public static final int noteListView=0x7f0a0005;

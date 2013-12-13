@@ -7,10 +7,12 @@ import java.io.IOException;
 import com.google.ads.AdRequest;
 import com.google.ads.AdSize;
 import com.google.ads.AdView;
+import com.purplebrain.adbuddiz.sdk.AdBuddiz;
 
 import android.os.Bundle;
 import android.os.Environment;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.util.Log;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -25,9 +27,20 @@ public class NoteActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_note);
 		
+		if (!MainActivity.isAdBuddizEverLoad) {
+			AdBuddiz.cacheAds(this);
+			AdBuddiz.showAd(this);
+			MainActivity.isAdBuddizEverLoad = true;
+		}
+		
 		try {
-			setResultText( readFileAsString(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+ NoteListActivity.NoteFileName) );
+			String noteContent = readFileAsString(Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS+"/"+ NoteListActivity.NoteFileName);
+			setResultText( noteContent );
 		} catch (IOException e) {
+			if (MainActivity.isDebug) {
+				Log.e("gray", "NoteActivity.java:onCreate, IOException:" + e.toString());
+			}
+			showAlertDialog("Waring", "You probably don't note anything yet.\nException:" + e.toString());
 			e.printStackTrace();
 		}
 		
@@ -144,6 +157,13 @@ public class NoteActivity extends Activity {
 		default:
 			break;
 		}
+	}
+	
+	public void showAlertDialog(String title, String message) {
+		AlertDialog.Builder dialog = new AlertDialog.Builder(NoteActivity.this);
+        dialog.setTitle(title);
+        dialog.setMessage(message);
+        dialog.show();
 	}
 	
 	@Override

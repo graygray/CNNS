@@ -228,7 +228,6 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 			if (isNetworkAvailable()){
 				
 				showProcessDialog(0, "Please Wait...", "Loading Script...");
-				
 				new Thread(new Runnable() 
 				{ 
 					@Override
@@ -243,10 +242,11 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 						} catch (Exception e) {
 							Log.e("gray", "PlayActivity.java:run, Exception1:" + e.toString());  
 							e.printStackTrace();
+							handler.sendEmptyMessage(2);
 						}
 					} 
 				}).start();
-			
+				
 			} else {
 				
 				if (MainActivity.isDebug) {
@@ -736,6 +736,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
         	switch (msg.what) {
 			case 0:
 				
+				Log.e("gray", "PlayActivity.java:handleMessage, case 0");
 				setResultText(cnnScriptContent);
 				// save script content to local
 				FileWriter fw;
@@ -760,6 +761,7 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 
 			case 1:
 				
+				Log.e("gray", "PlayActivity.java:handleMessage, case 1");
 				ActivityManager manager = (ActivityManager) getApplicationContext().getSystemService(Context.ACTIVITY_SERVICE);
 				String name = manager.getRunningTasks(1).get(0).topActivity.getClassName();
 				if (MainActivity.isDebug) {
@@ -780,6 +782,30 @@ public class PlayActivity extends Activity implements OnCompletionListener, OnPr
 				}
 				
 				break;
+				
+				
+			case 2:
+				
+				Log.e("gray", "PlayActivity.java:handleMessage, case 2");
+				cnnScriptPath = cnnScriptPath.replaceAll("sn.01.html", "sn.02.html");
+				Log.e("gray", "PlayActivity.java:retry to get script, cnnScriptPath:" + cnnScriptPath);
+				new Thread(new Runnable() 
+				{ 
+					@Override
+					public void run() 
+					{ 
+						try {
+							getScriptContent();
+							handler.sendEmptyMessage(0);
+							if (MainActivity.isDebug) {
+								Log.e("gray", "PlayActivity.java:run, " + cnnScriptContent);
+							}
+						} catch (Exception e) {
+							Log.e("gray", "PlayActivity.java:run, Exception11:" + e.toString());  
+							e.printStackTrace();
+						}
+					} 
+				}).start();
 			}
             
 		    

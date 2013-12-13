@@ -18,10 +18,10 @@
 	    android:showAsAction="never"
 	    android:title="@string/action_qa" />
     
-    <item 
+<!--     <item 
 	    android:id="@+id/action_notelist" 
 	    android:orderInCategory="103"
 	    android:showAsAction="never"
-	    android:title="@string/action_notelist" />
+	    android:title="@string/action_notelist" /> -->
 
 </menu>

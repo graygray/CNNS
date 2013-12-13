@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.graylin.cnns"
-    android:versionCode="32"
-    android:versionName="1.32" >
+    android:versionCode="35"
+    android:versionName="1.35" >
 
     <uses-sdk
         android:minSdkVersion="9"
@@ -12,7 +12,11 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.GET_TASKS" />
-
+    
+	<!-- adbuddiz -->
+	<uses-permission android:name="android.permission.READ_PHONE_STATE" />
+	<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
@@ -46,6 +50,15 @@
             android:name="com.graylin.cnns.NoteActivity"
             android:label="@string/title_activity_note" >
         </activity>
+        
+        <!-- adbuddiz -->
+        <activity 
+            android:name="com.purplebrain.adbuddiz.sdk.AdBuddizActivity" 
+            android:theme="@android:style/Theme.Translucent" />
+        <meta-data 
+            android:name="ADBUDDIZ_PUBLISHER_KEY" 
+            android:value="79ffab3c-d687-4b4f-802a-f6a8c1d88163" />   
+        
         <service android:name=".PlayVideoService" />
         
         <receiver android:name=".RemoteControlReceive">
